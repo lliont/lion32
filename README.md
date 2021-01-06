@@ -1,7 +1,7 @@
 # lion32
 Lion FPGA CPU/Computer 32bit version
 
-This is the 32bit version of my 16bit Lion System (lliont/lion32 repository).
+This is the 32bit version of my 16bit Lion System (lliont/lion16 repository).
 
 lionsys.sof and lionsys.jic are the files for configuration of a QMTech Cyclone V FPGA board for Lion32.
 
