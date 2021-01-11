@@ -504,7 +504,7 @@ static int arc[] = {
 	{
 		int bank=s/15; int ss=s%15;
 		Lionsys.out(16384+bank*4096+256*buf+ss*8,x); //Lionsys.outb(16384+bank*4096+1+256*buf+s*8,x%256);
-		Lionsys.out(16384+bank*4096+2+256*buf+ss*8,y); //Lionsys.outb(16384+bank*4096+3+256*buf+s*8,y);
+		Lionsys.out(16384+bank*4096+2+256*buf+ss*8,y+8); //Lionsys.outb(16384+bank*4096+3+256*buf+s*8,y);
 		Lionsys.out(16384+bank*4096+6+256*buf+ss*8,en); //Lionsys.outb(16384+bank*4096+7+256*buf+s*8,en);
 	}
 	
@@ -609,7 +609,7 @@ static int arc[] = {
 		int key=0, asct=0, near=0, turn=0; 
 		//Lionsys.out(24,1);
 		Lionsys.out(11,1); //Lionsys.out(13,10000); //Lionsys.out(28,180); 
-		Lionsys.out(25,60); Lionsys.out(26,70);  Lionsys.out(27,70);
+		Lionsys.out(25,130); Lionsys.out(26,150);  Lionsys.out(27,150);
 		while ((key!='Q') && (key!='q'))
 		{
 			Lionsys.out(20,0); // buffer 0
@@ -623,7 +623,7 @@ static int arc[] = {
 			Lionsys.print_num(0,7,score);
 			t=Lionsys.timer(); t2=t; t3=t;	t4=t;
 			for (i=0; i<28; i++) set_sprite(spen[i],0,spalive[i],spx[i],spy[i]);
-			int snd=6; Lionsys.out(27,70);
+			int snd=6; Lionsys.out(27,150);
 			while (snd<60) if (Lionsys.isplaying(2)==0 && Lionsys.isplaying(1)==0) {
 				Lionsys.sound(1,ptable1[stune[snd] & (byte) 0x0F],2);
 				Lionsys.sound(2,ptable2[stune[snd]/16],2);
@@ -859,7 +859,9 @@ static int arc[] = {
 				key=Lionsys.inkey();
 			}
 		}
-		Lionsys.out(11,0); Lionsys.out(32,0);
+		Lionsys.out(11,0); Lionsys.out(31,0); Lionsys.out(32,0);
+		Lionsys.out(25,255); Lionsys.out(26,255); Lionsys.out(27,255);
+		
 	}
 }
 

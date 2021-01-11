@@ -2418,6 +2418,11 @@ GETLN:
 		PUSH	A2
 		PUSH	A5
 		PUSH	A6
+		OUT   20,0
+		SETX	63         ;cursor init
+		MOV	A2,$FFFF
+		MOV	A1,26880
+		NTOI	A1,A2
 		MOV.D	A4,BUFFER   ; a4<->di
 		MOVI	A6,0
 		MOVI	A5,0
@@ -2436,7 +2441,7 @@ GL6:		MOVI	A0,7
 		MOVI	A0,10
 		INT	4
 
-KEYIN:	OUT   24694,0
+KEYIN:	OUT   24694,0   ;cursor off
 		MOV	A0,A1      ; CHAR IN A0
 		CMP.B	A0,200
 		JNZ  GL9
