@@ -370,21 +370,22 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 		angle=16-angle;
 		x1=(int ) ((-4)*cost[angle]-(-5)*sint[angle]);
 		y1=(int ) ((-4)*sint[angle]+(-5)*cost[angle]);
-		Lionsys.out(28672,0);
-		Lionsys.out(28674,(x+x1)*256+ y+y1);
-		Lionsys.out(28676,brigtness);
+		Lionsys.out(98304,0);
+		Lionsys.out(98306,(x+x1)*256+ y+y1);
+		Lionsys.out(98308,brigtness);
 		x1=(int ) (cost[angle]-(6)*sint[angle]);
 		y1=(int ) (sint[angle]+(6)*cost[angle]);
-		Lionsys.out(28678,(x+x1)* 256 + (y+y1));
-		Lionsys.out(28680,brigtness);
+		Lionsys.out(98310,(x+x1)* 256 + (y+y1));
+		Lionsys.out(98312,brigtness);
 		x1=(int ) ((4)*cost[angle]-(-5)*sint[angle]);
 		y1=(int ) ((4)*sint[angle]+(-5)*cost[angle]);
-		Lionsys.out(28682,(x+x1)*256 + y+y1);
-		Lionsys.out(28684,brigtness);
+		Lionsys.out(98314,(x+x1)*256 + y+y1);
+		Lionsys.out(98316,brigtness);
 		x1=(int ) ((-4)*cost[angle]-(-5)*sint[angle]);
 		y1=(int ) ((-4)*sint[angle]+(-5)*cost[angle]);
-		Lionsys.out(28686,(x+x1)*256 + y+y1);
-		Lionsys.out(28688,0);
+		Lionsys.out(98318,(x+x1)*256 + y+y1);
+		Lionsys.out(98320,0);
+		Lionsys.out(98322,128*256+128);
 	}
 	
  static void draw_bullet(int brigtness, int b, int x, int y)
@@ -392,11 +393,12 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 		y=199-y;
 		x=(int) (x*256f/320f);
 		//brigtness=brigtness+(x%2)<<11;
-		Lionsys.out(28688+10*b,0);
-		Lionsys.out(28690+10*b,x*256 + y);
-		Lionsys.out(28692+10*b,brigtness);
-		Lionsys.out(28694+10*b,x*256 + y);
-		Lionsys.out(28696+10*b,0);
+		Lionsys.out(98324+10*b,0);
+		Lionsys.out(98326+10*b,x*256 + y);
+		Lionsys.out(98328+10*b,brigtness);
+		Lionsys.out(98330+10*b,(x+1)*256 + y+1);
+		Lionsys.out(98332+10*b,0);
+		Lionsys.out(98334+10*b,128*256+128);
 		/* Lionsys.out(28688,brigtness);
 		Lionsys.out(28690,(x+4)<<8 + (y+8));
 		Lionsys.out(28692,brigtness);
@@ -412,29 +414,31 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 		angle=16-angle;
 		x1=(int ) ((-6)*cost[angle]-(-7)*sint[angle]);
 		y1=(int ) ((-6)*sint[angle]+(-7)*cost[angle]);
-		Lionsys.out(28700+r*24,0);
-		Lionsys.out(28702+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28704+r*24,brigtness);
+		Lionsys.out(98336+r*28,0);
+		Lionsys.out(98338+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98340+r*28,brigtness);
 		x1=(int ) ((-4)*cost[angle]-(6)*sint[angle]);
 		y1=(int ) ((-4)*sint[angle]+(6)*cost[angle]);
-		Lionsys.out(28706+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28708+r*24,brigtness);
+		Lionsys.out(98342+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98344+r*28,brigtness);
 		x1=(int ) ((5)*cost[angle]-(9)*sint[angle]);
 		y1=(int ) ((5)*sint[angle]+(9)*cost[angle]);
-		Lionsys.out(28710+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28712+r*24,brigtness);
+		Lionsys.out(98346+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98348+r*28,brigtness);
 		x1=(int ) ((7)*cost[angle]-(-5)*sint[angle]);
 		y1=(int ) ((7)*sint[angle]+(-5)*cost[angle]);
-		Lionsys.out(28714+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28716+r*24,brigtness);
+		Lionsys.out(98350+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98352+r*28,brigtness);
 		x1=(int ) ((2)*cost[angle]-(-1)*sint[angle]);
 		y1=(int ) ((2)*sint[angle]+(-1)*cost[angle]);
-		Lionsys.out(28718+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28720+r*24,brigtness);
+		Lionsys.out(98354+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98356+r*28,brigtness);
 		x1=(int ) ((-6)*cost[angle]-(-7)*sint[angle]);
 		y1=(int ) ((-6)*sint[angle]+(-7)*cost[angle]);
-		Lionsys.out(28722+r*24,(x+x1)*256 + (y+y1));
-		Lionsys.out(28724+r*24,0);
+		Lionsys.out(98358+r*28,(x+x1)*256 + (y+y1));
+		Lionsys.out(98360+r*28,0);
+		Lionsys.out(98362+r*28,128*256+128);
+		Lionsys.out(98364+r*28,0); //***
 	}
 
 
@@ -476,7 +480,7 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 			if (ii<8) set_sprite(2+ii,0,1,(int) rockx[ii],(int) rocky[ii],0);
 			  else if (ii<16) set_sprite(ii-6,0,1,(int) rockx[ii],(int) rocky[ii],1);
 			  else    set_sprite(ii-14,0,1,(int) rockx[ii],(int) rocky[ii],2);
-			draw_rock(60,ii,(int) rockx[ii],(int) rocky[ii],rockon[ii]);
+			draw_rock(95,ii,(int) rockx[ii],(int) rocky[ii],rockon[ii]);
 		}
 	}
 
@@ -485,12 +489,12 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 		int snd= 0; int j,s,t,ti,frame1;
 		int key=0; int ji,delay,col=0x0000,wd,jf;
 		hiscore=1; int scroll=0;
-		int sb=70;
+		int sb=115;
 		//Lionsys.out(24,1);
 		while ((key!='Q') && (key!='q'))
 		{
 			level=1; score=0; hit=0;
-			Lionsys.screen( 0, 3);
+			Lionsys.screen( 0, 137);
 			Lionsys.cls();
 			Lionsys.print_str(1,10,strMsg);
 			Lionsys.print_str(1,42,"L:  6");
@@ -520,8 +524,8 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 			t=Lionsys.timer();
 			sx=155f; sy=100f; sdx=0; sdy=0; ti=0; hit=0; jf=0;
 			frame1=0; buffer=0; Lionsys.out(20,buffer); ji=0; int jb=0;
-			for (i=0; i<120; i++) { Lionsys.screen( 0,Lionsys.rnd(7)); Lionsys.plot(30+Lionsys.rnd(260),20+Lionsys.rnd(160),1); }
-			Lionsys.screen( 0, 3);
+			for (i=0; i<120; i++) { Lionsys.screen( 0,Lionsys.rnd(255)); Lionsys.plot(30+Lionsys.rnd(260),20+Lionsys.rnd(160),1); }
+			Lionsys.screen( 0, 137);
 			delay=300; int change;
 			while ((hit<6) && (key!='q') && (key!='Q')) {
 				char k =(char) key; 
@@ -587,10 +591,10 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 					if (sdy*sdy>0.0000001f) sdy=sdy*0.986f;
 					scroll = (scroll + 1) % 4;
 					if (scroll==0) {
-						if (sdx>0.05f) Lionsys.hscroll(20,163,30,131,-1);
-						if (sdx<-0.05f) Lionsys.hscroll(20,163,30,131,1);
-						if (sdy>0.05f) Lionsys.vscroll(20,163,30,131,1);
-						if (sdy<-0.05f) Lionsys.vscroll(20,163,30,131,-1);
+						if (sdx>0.05f) Lionsys.hscroll(20,163,19,280,-1);
+						if (sdx<-0.05f) Lionsys.hscroll(20,163,19,280,1);
+						if (sdy>0.05f) Lionsys.vscroll(20,163,19,280,1);
+						if (sdy<-0.05f) Lionsys.vscroll(20,163,19,280,-1);
 					}
 					if (ji<30) ji+=1;  if (jf<30) jf+=1;
 					t=Lionsys.timer();
@@ -607,7 +611,7 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 							if (i<8) set_sprite(2+i,buffer,1,(int) rockx[i],(int) rocky[i],0); 
 								else if (i<16) set_sprite(i-6,buffer,1,(int) rockx[i],(int) rocky[i],1);
 								else set_sprite(i-14,buffer,1,(int) rockx[i],(int) rocky[i],2);
-							draw_rock(60,i,(int) rockx[i],(int) rocky[i],rockangle[i]);
+							draw_rock(95,i,(int) rockx[i],(int) rocky[i],rockangle[i]);
 						} else { draw_rock(0,i,(int) rockx[i],(int) rocky[i],rockangle[i]);
 								if (i<8) { kill_sprite(2+i,0);} 
 								else if (i<16) { kill_sprite(i-6,1);}
@@ -631,7 +635,7 @@ static float[] cost = { 1f, 0.9238f, 0.7071f, 0.3827f, 0f, -0.3827f, -0.7071f, -
 						if (by+bdy<11f) by=188f; else if (by+bdy>188f) by=11f; 
 						by+=bdy;
 						set_sprite(1,buffer,1,(int) bx,(int) by,0);
-						draw_bullet(80,0,(int) bx,(int) by);
+						draw_bullet(120,0,(int) bx,(int) by);
 						for (i=0; i<24; i++) {
 							if (rockon[i]==1)
 							{

@@ -492,8 +492,8 @@ static int arc[] = {
  static int spox[]=new int[28], spoy[]=new int[28] ,spcol[]=new int[28], spframe[]=new int[28], spbullets[]=new int[28], escort[]=new int[28];
  static int spen[] = {1,2,15,16,17,18,19,20,21,22,23,24,25,26,30,31,32,33,34,35,36,37,38,39,40,41,42,43 };
  static int attack_order[] = {14,20,21,27,7,13,15,19,22,26,8,12,16,18,25,9,11,17,24,10,2,6,3,5,4,0,1};
- static int bullets[] = {4,5,6,7,8,9,10,11,12,13,14,27};
- static int bulsx[]=new int[12], bulsy[]=new int[12], bulsen[]=new int[12]; 
+ static int bullets[] = {4,5,6,7,8,9,10,11,12,13,14,27,44,45};
+ static int bulsx[]=new int[14], bulsy[]=new int[14], bulsen[]=new int[14]; 
  static int aliencnt=10, attackdl1=30, attdl2=50, alienno=0; 
  static int attackno=0;
  static int attackers[] = { 0,0,0,0,0,0,0 };
@@ -502,7 +502,7 @@ static int arc[] = {
 
 	static void set_sprite( int s, int buf, int en, int x, int y)
 	{
-		int bank=s/15; int ss=s%15;
+		int bank=s/14; int ss=s%14;
 		Lionsys.out(16384+bank*4096+256*buf+ss*8,x); //Lionsys.outb(16384+bank*4096+1+256*buf+s*8,x%256);
 		Lionsys.out(16384+bank*4096+2+256*buf+ss*8,y+8); //Lionsys.outb(16384+bank*4096+3+256*buf+s*8,y);
 		Lionsys.out(16384+bank*4096+6+256*buf+ss*8,en); //Lionsys.outb(16384+bank*4096+7+256*buf+s*8,en);
@@ -510,14 +510,14 @@ static int arc[] = {
 	
 	static void kill_sprite( int s)
 	{
-		int bank=s/15; int ss=s%15;
+		int bank=s/14; int ss=s%14;
 		Lionsys.out(16384+bank*4096+6+256+ss*8,0);
 		Lionsys.out(16384+bank*4096+6+ss*8,0);
 	}
 	
 	static void set_sprite_data( int s, int buf, byte d[], int frame, int colOR)
 	{
-		int bank=s/15; int ss=s%15;
+		int bank=s/14; int ss=s%14;
 		for (int j=0; j<128; j++)  {
 				Lionsys.outb(16896+bank*4096+1792*buf+ss*128+j,d[j+frame*128] | (byte) colOR);
 		}
@@ -538,7 +538,7 @@ static int arc[] = {
 	
 	static int free_bullet(int level)
 	{	int f=-1, i=0;
-		while (i<12 && f==-1) {
+		while (i<14 && f==-1) {
 			if (bulsen[i]==0) {
 				f=i; bulsen[i]=1; 
 			}
@@ -568,7 +568,7 @@ static int arc[] = {
 		for (i=0; i<28; i++)  { 
 			spalive[i]=1; spdying[i]=0; swarmed[i]=1; attacking[i]=-1; 
 			spx[i]=spox[i]; spy[i]=spoy[i]; spdx[i]=0; spframe[i]=0; escort[i]=-1;
-			if (level==0) spbullets[i]=3; else spbullets[i]=4;
+			if (level==0) spbullets[i]=3; else if (level==1) spbullets[i]=4; else spbullets[i]=5;
 		}
 		set_sprite_data(0,0,shipdata,0,0);
 		set_sprite_data(0,1,shipdata,0,0);
@@ -590,16 +590,16 @@ static int arc[] = {
 			set_sprite_data(37+i,0,aliendata,0,(byte) 0x99);
 			set_sprite_data(37+i,1,aliendata,8,(byte) 0x99);
 		}
-		for (j=0; j<12; j++) {
+		for (j=0; j<14; j++) {
 			set_sprite_data(bullets[j],0,buldata,0,0x11);
 			set_sprite_data(bullets[j],1,buldata,0,0x11);
 		}
 		shipx=130; shipy = 190;  
 		swarmx=62; swarmy=0; swarmdx=0;
-		if (level==0) for (i=0; i<120; i++) { Lionsys.screen( 0,Lionsys.rnd(14)); Lionsys.plot(29+Lionsys.rnd(240),11+Lionsys.rnd(185),1); }
+		if (level==0) for (i=0; i<120; i++) { Lionsys.screen( 0,Lionsys.rnd(128)); Lionsys.plot(29+Lionsys.rnd(240),11+Lionsys.rnd(185),1); }
 		attackdl1=35; attdl2=120;
-		for (j=0; j<12; j++) bulsen[j]=0;
-		Lionsys.screen( 0, 14);
+		for (j=0; j<14; j++) bulsen[j]=0;
+		Lionsys.screen( 0, 160);
 	}
 
 	static void main()
@@ -613,7 +613,7 @@ static int arc[] = {
 		while ((key!='Q') && (key!='q'))
 		{
 			Lionsys.out(20,0); // buffer 0
-			Lionsys.screen( 0, 14); Lionsys.cls();
+			Lionsys.screen( 0, 160); Lionsys.cls();
 			set_param(level); 
 			init(level);
 			set_sprite(0,0,1,shipx,shipy);
@@ -663,9 +663,9 @@ static int arc[] = {
 											}
 										}
 										score+=val; esc=0;
-										Lionsys.screen( 0,12);
+										Lionsys.screen( 0,120);
 										Lionsys.print_num(2,1,val);
-										Lionsys.screen( 0,14);
+										Lionsys.screen( 0,160);
 									} else
 									if (i<7) { score+=100-swarmed[i]*50;} else
 									if (i<14) { score+=80-swarmed[i]*40;} else 
@@ -676,12 +676,12 @@ static int arc[] = {
 							}
 						}
 					}
-					for (j=0; j<12; j++) {
+					for (j=0; j<14; j++) {
 							if (bulsen[j]==1)
 							if (Lionsys.abs(bulsx[j]-shipx)<8 && (shipy-bulsy[j])<7) {
 								attackdl1=68; attdl2=120; 
 								shipdie=16;
-								for (i=0; i<12; i++) { bulsen[i]=0; }
+								for (i=0; i<14; i++) { bulsen[i]=0; }
 							}
 						}
 					t=Lionsys.timer();
@@ -727,14 +727,14 @@ static int arc[] = {
 						if (spx[i]>234 && spalive[i]==1 && spdying[i]==0) swdx=-1;
 						dx=(shipx-spx[i]); dy=(shipy-spy[i]);  //collision
 						if ( spalive[i]==1 && attackdl1<30) 
-							if (((int) dx*dx+ (int) dy*dy)<197) {
+							if (((int) dx*dx+ (int) dy*dy)<195) {
 							attackdl1=68;
 							shipdie=31;
-							for (j=0; j<12; j++)  bulsen[j]=0; 
+							for (j=0; j<14; j++)  bulsen[j]=0; 
 							spdying[i]=4;
 							}
 					}
-					for (j=0; j<12; j++) {
+					for (j=0; j<14; j++) {
 						set_sprite(bullets[j],0,bulsen[j],bulsx[j],bulsy[j]);
 						bulsy[j]+=7;
 						if (bulsy[j]>198) bulsen[j]=0;
@@ -743,10 +743,10 @@ static int arc[] = {
 					t2=Lionsys.timer();
 				}
 				ti4=(Lionsys.timer()-t4);
-				if (Lionsys.abs(ti4)>24)    //***************4
+				if (Lionsys.abs(ti4)>22)    //***************4
 				{
 					int frame=4, dy=0;
-					Lionsys.vscroll(11,184,30,126,-1);
+					Lionsys.vscroll(11,184,30,126*2,-1);
 					for (i=0; i<28; i++) 
 					{   
 						if (attacking[i]>-1 && spdying[i]!=1) {
@@ -764,7 +764,7 @@ static int arc[] = {
 									if (shipx-spx[i]!=0) if (shipx-spx[i]>0) spdx[i]++; else spdx[i]--;
 									if (spdx[i]>8) spdx[i]=8; if (spdx[i]<-8) spdx[i]=-8;
 								}
-								if (spy[i]>60 && spy[i]%15==10) {
+								if (spy[i]>60 && spy[i]%14==9) {
 									if (spbullets[i]>0 && attackdl1<30) {
 											int fb=free_bullet(level);
 										if (fb!=-1) {
@@ -808,7 +808,7 @@ static int arc[] = {
 					t4=Lionsys.timer();
 				}
 				ti3=(Lionsys.timer()-t3);  //**************3
-				if (Lionsys.abs(ti3)>100)
+				if (Lionsys.abs(ti3)>96)
 				{ 
 					if (attackdl1>0) attackdl1--;
 					if (attackdl1==0 && attackno<5) { 
@@ -838,7 +838,7 @@ static int arc[] = {
 							}
 						}
 					}
-					if (buffer0==0) buffer0=1; else buffer0=0;	Lionsys.out(20,buffer0*48);
+					if (buffer0==0) buffer0=1; else buffer0=0;	Lionsys.out(20,buffer0*224);
 					t3=Lionsys.timer();
 					//if (aliencnt!=0) {  Lionsys.sound(1,40+asct,5); asct=(asct+1) % 30;}
 					if (bulcnt>0) {  Lionsys.sound(0,500-bulcnt/2,4); //if (Lionsys.isplaying(0)==0) 
