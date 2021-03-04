@@ -87,7 +87,7 @@ shared variable AD: Std_logic_vector(31 downto 0);
 shared variable cin,Wen,DWen,sub,half,rhalf,f3: Std_logic;
 shared variable M : Std_logic_vector(63 downto 0);
 shared variable R,RR: std_logic_vector(2 downto 0);
-shared variable rest,rest2,rest3,rel,setreg:boolean:=false;
+shared variable rest,rest2,rest3,rest4,rel,setreg:boolean:=false;
 shared variable tmp,tmp2:Std_logic_vector(31 downto 0);
 shared variable r1,r2: Std_logic_vector(2 downto 0);
 shared variable bt: natural range 0 to 31;
@@ -183,7 +183,7 @@ begin
 	 HOLDA<='0';	AD:=PC; half:='0'; 
 	AS<='0'; sub:='0'; cin:='0';  setreg:=true;   WAC:='1'; BAC:='0';
 	fetch<=false; fetch1<=false; fetch2<=false; mem_trans<=false;
-	 DACS:='0'; DACS2:='0';  rest2:=false;
+	 DACS:='0'; DACS2:='0';  rest2:=false; rest4:=false;
 end init_next_ins;
 
 begin
@@ -216,7 +216,7 @@ IF rising_edge(clock) THEN
 			when others => --decode
 				op:=to_integer(unsigned(Di(15 downto 9)));
 				AS<='1'; rest:=true; rhalf:='0'; Wen:='0';  rest3:=false; DWen:='0'; DS<='1';
-				DACS:=param1_dw(op);	DACS2:=param3_dw(op);
+				DACS:=param1_dw(op);	DACS2:=param3_dw(op); rest4:=false;
 				SWAP:=param2_swap(op);
 				rel:=(param4_relative(op)='1'); fetch3<=(param5_dfetch(op)='1');
 				f3:=param5_dfetch(op);
@@ -382,6 +382,27 @@ IF rising_edge(clock) THEN
 						IST<=Y1;
 					end if;
 					rest2:=true;
+			when "0111010" =>   -- ALNG
+				case TT is
+				when 0 =>
+					if X1=ZERO16&ZERO16 then
+						rest2:=true;
+						IDX<=ZERO16&ZERO8&"00100000";
+					else
+						IDX<=ZERO16&ZERO16; 
+					end if;
+				when 1 =>
+					if X1(31)='1' then
+						rest2:=true;
+						set_reg(r1,X1,'0','0'); 
+					else 
+						rest4:=true;
+						IDX<=IDX+1;
+						X1:=std_logic_vector(shift_left(unsigned (X1),1));
+					end if;
+				when others =>
+					rest3:=true;
+				end case;
 			when "0001010" =>            --MULU Reg,Reg	MULU.B Reg,(Reg,NUM,[reg],[n])
 				case TT is
 				when 0 =>
@@ -849,12 +870,12 @@ IF rising_edge(clock) THEN
 				end if;
 				set_reg(r1,tmp,'0','0'); 
 				rest3:=true;
-			when "1001111" =>              --SRA.D  was SRL.B Reg
+			when "1001111" =>              --SRA.D n was SRL.B Reg
 				tmp:= std_logic_vector(shift_right(signed (X1),bt));
 				set_reg(r1,tmp,'0'); 
 				SR(CA)<=X1(bt-1);
 				rest3:=true;
-			when "1010000" =>              --SLA.D  was SLL.B Reg
+			when "1010000" =>              --SLA.D n was SLL.B Reg
 				tmp:=  std_logic_vector(shift_left(signed (X1),bt));
 				set_reg(r1,tmp,'0');  
 				SR(CA)<=X1(32-bt);
@@ -903,12 +924,12 @@ IF rising_edge(clock) THEN
 				when others =>
 					rest3:=true;
 				end case;				
-			when "1001011" =>    --SLL.D Reg
+			when "1001011" =>    --SLL.D n
 			   SR(CA)<=X1(32-bt);
 				tmp:= std_logic_vector(shift_left(unsigned (X1),bt));
 				set_reg(r1,tmp);  
 				rest3:=true;
-			when "1011001" =>              --SRL.D Reg
+			when "1011001" =>              --SRL.D n
 				SR(CA)<=X1(bt-1);
 				tmp:= std_logic_vector(shift_right(unsigned (X1),bt));
 				set_reg(r1,tmp);  
@@ -986,10 +1007,10 @@ IF rising_edge(clock) THEN
 					sub:='0';
 				end case;
 				
-			when "1011011" | "0111010" =>              --ADD SUB SP,(Reg,NUM,[reg],[n])
-					rest2:=true;
+			when "1011011"  =>              --ADD SUB SP,(Reg,NUM,[reg],[n]) | 
+					rest3:=true;
 					if fetch then tmp:=X; else tmp:=Y1; end if;
-					if IR(9)='1' then ST<=ST+tmp; else ST<=ST-tmp; end if;
+					if bwb='0' then ST<=ST+tmp; else ST<=ST-tmp; end if;
 			when "0110011" =>             --JXAB JXAW
 					IDX<=IDX-1;	
 					if (IDX/=ZERO16&ZERO16) then 
@@ -1332,7 +1353,7 @@ IF rising_edge(clock) THEN
 			if rest3 then -- prepare next instruction and skip TT=0 step
 				init_next_ins; 
 				RW<='1'; IO<='0'; FF<=InitialState;	TT<=1;
-			else 
+			elsif rest4=false then
 				TT<=TT+1; 
 			end if;
 		end if;

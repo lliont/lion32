@@ -2174,45 +2174,31 @@ MULT:
 ; Div A2 by A1 res in A1,A0
 
 DIV:		
-		PUSHI		A3
-		MOV.D		A3,A1
+		CMPI		A1,0
+		JNZ		DIV0
 		MOV.D		A1,$7FFFFFFF
-		CMPI		A3,0
-		JZ		DIVE
-		MOVI		A1,0
+		MOVI		A0,0
+		RETI	
+DIV0:		PUSHI		A3
+		MOVI		A3,0
 		MOV.D		A0,A1
 		XOR.D		A0,A2
 		JP		DIV1     ; Check result sign
-		MOVI		A1,1
-DIV1:		PUSHI		A1 
-		BTST		A2,31    ; check if neg and convert 
-		JZ		DIV2
-		NEG.D		A2
-DIV2:		BTST		A3,31   ; check if neg and convert 
-		JZ		DIV3
-		NEG.D		A3
-DIV3:		CMP.D		A3,A2
-		MOV.D		A0,A2  ; id divider > divident res=0 rem=divident
-		JBE		DIV4		
-		MOVI		A1,0
-		JMP		DIV14
-DIV4:		MOVI		A1,0   ; main algorithm
-DIV5:		BTST		A0,31  ; left align
-		JNZ		DIV6
-		ADDI		A1,1
-		SLL.D		A0,1
-		JMP		DIV5
-DIV6:		PUSHI 		A1     ; store no of shifts
-		MOVI		A2,0
-		MOV.D		A1,A3
-DIV7:		BTST		A1,31  ; left align 
-		JNZ		DIV12
-		SLL.D		A1,1
-		ADDI		A2,1
-		JMP		DIV7
-DIV12:	MOV.D		A3,A1  
-		MOV.D		A1,A2
-		POPI		A2  ; Get no of shifts
+		MOVI		A3,1
+DIV1:		MOV.D		A0,A2		
+		AND.D		A1,$7FFFFFFF
+		AND.D		A2,$7FFFFFFF
+		CMP.D		A1,A2
+		JBE		DIV4
+		MOVI		A1,0    ;A0=A2   id divider > divident res=0 rem=divident	
+		JMP		DIVE
+DIV4:		PUSHI		A3
+		MOV.D		A0,A2
+		ALNG		A0
+		MOVX		A2    ; store no of shifts
+		ALNG		A1
+		MOV.D		A3,A1
+		MOVX		A1  ; Get no of shifts
 		SUB.D		A1,A2
 DIV10:	CMPI		A2,0
 		JZ		DIV9
@@ -2240,35 +2226,23 @@ DIVE:		POPI		A3
 ; unsigned Div A2 by A1 res in A1,A0
 
 UDIV:		
-		PUSHI		A3
-		MOV.D		A3,A1
+		CMPI		A1,0
+		JNZ		UDIV3
 		MOV.D		A1,$FFFFFFFF
-		CMPI		A3,0
-		JZ		UDIVE
-UDIV3:	MOV.D		A1,A2
-		CMP.D		A3,A1
+		MOVI		A0,0
+		RETI
+UDIV3:	CMP.D		A1,A2
 		JBE		UDIV4
-		MOV.D		A0,A1  ; id divider > divident res=0 rem=divident
+		MOV.D		A0,A2  ; id divider > divident res=0 rem=divident
 		MOVI		A1,0
-		JMP		UDIVE
-UDIV4:	MOV.D		A0,A2 ; main algorithm
-		MOVI		A1,0
-UDIV5:	BTST		A0,31  ; left align
-		JNZ		UDIV6
-		ADDI		A1,1
-		SLL.D		A0,1
-		JMP		UDIV5
-UDIV6:	PUSHI		A1     ; store no of shifts
-		MOVI		A2,0
-		MOV.D		A1,A3
-UDIV7:	BTST		A1,31  ; left align 
-		JNZ		UDIV12
-		SLL.D		A1,1
-		ADDI		A2,1
-		JMP		UDIV7
-UDIV12:	MOV.D		A3,A1  
-		MOV.D		A1,A2
-		POPI		A2  ; Get no of shifts
+		RETI
+UDIV4:	PUSHI		A3
+		MOV.D		A0,A2 ; main algorithm
+		ALNG		A0
+		MOVX		A2
+		ALNG		A1
+		MOV.D		A3,A1  
+		MOVX		A1
 		SUB.D		A1,A2
 UDIV10:	CMPI		A2,0
 		JZ          UDIV9
@@ -2285,8 +2259,9 @@ UDIV11:	CMP.D		A0,A3  ; compare remainder with divisor
 UDIV8:	SRL.D		A3,1
 		SUBI		A2,1
 		JP		UDIV11
-UDIVE:	POPI		A3
+		POPI		A3
 		RETI
+
 
 ; -------------------------------------
 SKEYBIN:	
