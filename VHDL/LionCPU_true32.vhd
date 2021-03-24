@@ -386,22 +386,26 @@ IF rising_edge(clock) THEN
 				case TT is
 				when 0 =>
 					if X1=ZERO16&ZERO16 then
+						Y1:=ZERO16&ZERO8&"00100000";
+						set_reg(r2,Y1,'0','0');
 						rest2:=true;
-						IDX<=ZERO16&ZERO8&"00100000";
 					else
-						IDX<=ZERO16&ZERO16; 
+						Y1:=ZERO16&ZERO16; 
 					end if;
 				when 1 =>
 					if X1(31)='1' then
-						rest2:=true;
 						set_reg(r1,X1,'0','0'); 
+						rest4:=false;
 					else 
-						rest4:=true;
-						IDX<=IDX+1;
+						Y1:=Y1+1;
 						X1:=std_logic_vector(shift_left(unsigned (X1),1));
+						rest4:=true;
 					end if;
+				when 2 =>
+					Wen:='0'; Dwen:='0';
 				when others =>
-					rest3:=true;
+					set_reg(r2,Y1,'0','0');
+					rest2:=true;
 				end case;
 			when "0001010" =>            --MULU Reg,Reg	MULU.B Reg,(Reg,NUM,[reg],[n])
 				case TT is
@@ -521,8 +525,14 @@ IF rising_edge(clock) THEN
 			when "0010111" =>              -- BSET  R,n
 				tmp:=X1;	tmp(bt):='1';	set_reg(r1,tmp,'0','0'); 
 				rest3:=true;
+			when "0011101" =>              -- BSET  R,n
+				tmp:=X1;	tmp(bt+16):='1';	set_reg(r1,tmp,'0','0'); 
+				rest3:=true;			
 			when "0011000" =>              -- BCLR  R,n
 				tmp:=X1;	tmp(bt):='0'; set_reg(r1,tmp,'0','0'); 
+				rest3:=true;
+			when "0100111" =>              -- BCLR  R,n
+				tmp:=X1;	tmp(bt+16):='0'; set_reg(r1,tmp,'0','0'); 
 				rest3:=true;
 			when "0001011" =>              -- BTST  R,R
 				if X1(to_integer(unsigned(Y1(4 downto 0))))= '0' then SR(ZR)<='1'; else SR(ZR)<='0';  end if;
@@ -587,89 +597,51 @@ IF rising_edge(clock) THEN
 			when "0100010" =>              -- MOVI.B Reg,0-15
 				tmp(7 DOWNTO 0):="0000"&IR(5 downto 2);
 				set_reg(r1,tmp,'1','0'); 
-				rest3:=true;		
-			when "0100101" =>              -- JMP (Reg,NUM,[reg],[n])
-				if bwb='0' then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				else
-					IDX<=IDX-1;	
-					if (IDX/=ZERO16&ZERO16) then 
-						if fetch then PC<=X; else PC<=Y1; end if;
-						if SR(JXAD)='0' then  tmp:=X1+4; else tmp:=X1-4; end if;
-						set_reg(r1,tmp,'0','0');
-					end if;
-				end if;
-				rest2:=true;
+				rest3:=true;
 			when "0100110" =>              -- SRSET SRCLR n
 				SR(to_integer(unsigned(IR(5 downto 2))))<=IR(8); 
-				rest3:=true;
-			when "0100111" =>              -- JZ & JNZ (Reg,NUM,[reg],[n])
-				If SR(ZR)=bwb then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
+				rest3:=true;		
+			when "0100101" =>    -- JUMPS 1       
+				if fetch then tmp:=X; else	tmp:=Y1; end if;
+				case r1 is
+					when "001" =>  -- JMP JLE(Reg,NUM,[reg],[n])
+						if bwb='0' then
+							PC<=tmp;
+						else
+							If SR(ZR)='1' or (SR(NG)/=SR(OV)) then	PC<=tmp;	end if;
+						end if;
+					when "010" =>              -- JZ & JNZ (Reg,NUM,[reg],[n])
+						If SR(ZR)=bwb then PC<=tmp; end if;
+					when "011" =>              -- JO & JNO (Reg,NUM,[reg],[n])
+						If SR(OV)=bwb then PC<=tmp; end if;      
+					when "100" =>              -- JC,JB & JNC (Reg,NUM,[reg],[n])
+						If SR(CA)=bwb then PC<=tmp; end if;        
+					when "101" =>              -- JN & JP (Reg,NUM,[reg],[n])
+						If SR(NG)=bwb then PC<=tmp; end if;
+					when "110" =>              -- JAE JBE (Reg,NUM,[reg],[n])   
+						If SR(ZR)='1' or SR(CA)=bwb then PC<=tmp;	end if;
+					when "111" =>              -- JA JL(Reg,NUM,[reg],[n])   
+						if bwb='0' then
+							If SR(ZR)='0' and SR(CA)='0' then PC<=tmp; end if;
+						else
+							If  (SR(NG)/=SR(OV)) then PC<=tmp; end if;
+						end if;
+					when others =>
+				end case;
+				rest2:=true;
+			when "0110001" =>              -- JXAD (Reg,NUM,[reg],[n])
+				IDX<=IDX-1;	
+				if (IDX/=ZERO16&ZERO16) then 
+					if fetch then PC<=X; else PC<=Y1; end if;
+					if SR(JXAD)='0' then  tmp:=X1+4; else tmp:=X1-4; end if;
+					set_reg(r1,tmp,'0','0');
 				end if;
 				rest2:=true;
-			when "0101001" =>              -- JO & JNO (Reg,NUM,[reg],[n])
-				If SR(OV)=bwb then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;       
-			when "0101011" =>              -- JC,JB & JNC (Reg,NUM,[reg],[n])
-				If SR(CA)=bwb then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;        
-			when "0101101" =>              -- JN & JP (Reg,NUM,[reg],[n])
-				If SR(NG)=bwb then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
+			when "0111001" =>              -- JG JGE (Reg,NUM,[reg],[n])
+				If SR(ZR)=bwb and (SR(NG)=SR(OV)) then
+					if fetch then PC<=X;	else	PC<=Y1; end if;
 				end if;
 				rest2:=true;
-			when "0011101" =>              -- JAE JBE (Reg,NUM,[reg],[n])   
-				If SR(ZR)='1' or SR(CA)=bwb then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;
-			when "0101110" =>              -- SEX SEX.B (Reg,NUM,[reg],[n])
-				if bwb='0' then
-					tmp(31 downto 16):=(others => X1(15));
-					tmp(15 downto 0):=X1(15 downto 0);
-				else 
-					tmp(31 downto 8):=(others => X1(7));
-					tmp(7 downto 0):=X1(7 downto 0);
-				end if;
-				set_reg(r1,tmp);
-				rest2:=true;
-			when "0101111" =>              -- JA (Reg,NUM,[reg],[n])   
-				If SR(ZR)='0' and SR(CA)='0' then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;
-
-			when "0110000" =>              --CMPI.B Reg,0-15
-				half:='1';
-				Y1:= ZERO16&"000000000000"&IR(5 downto 2);
-				sub:='1'; 
-				setreg:=false;
-				IR(15 downto 9):="0000011"; -- continue as in ADD
-				
-			when "0110001" =>              -- JL (Reg,NUM,[reg],[n])
-				If  (SR(NG)/=SR(OV)) then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;
-         when "0110010" =>              --CMPH Reg,(Reg,NUM,[reg],[n])
-				half:='1';
-				X1(7 downto 0):=X1(15 downto 8);
-				if fetch then Y1(7 downto 0):=X(15 downto 8); else Y1(7 downto 0):=Y1(15 downto 8);	end if;
-				sub:='1'; setreg:=false;
-				IR(15 downto 9):="0000011"; -- continue as in ADD
 			when "0110101" =>              -- JSR Reg  /NUM / <reg>/<n>
 				case TT is
 				when 0 =>
@@ -680,6 +652,28 @@ IF rising_edge(clock) THEN
 					if fetch then PC<=X; else	PC<=Y1; end if;
 					rest2:=true;
 				end case;
+			when "0101110" =>              -- SEX SEX.B (Reg,NUM,[reg],[n])
+				if bwb='0' then
+					tmp(31 downto 16):=(others => X1(15));
+					tmp(15 downto 0):=X1(15 downto 0);
+				else 
+					tmp(31 downto 8):=(others => X1(7));
+					tmp(7 downto 0):=X1(7 downto 0);
+				end if;
+				set_reg(r1,tmp);
+				rest2:=true;
+			when "0110000" =>              --CMPI.B Reg,0-15
+				half:='1';
+				Y1:= ZERO16&"000000000000"&IR(5 downto 2);
+				sub:='1'; 
+				setreg:=false;
+				IR(15 downto 9):="0000011"; -- continue as in ADD
+         when "0110010" =>              --CMPH Reg,(Reg,NUM,[reg],[n])
+				half:='1';
+				X1(7 downto 0):=X1(15 downto 8);
+				if fetch then Y1(7 downto 0):=X(15 downto 8); else Y1(7 downto 0):=Y1(15 downto 8);	end if;
+				sub:='1'; setreg:=false;
+				IR(15 downto 9):="0000011"; -- continue as in ADD
 			when "0110110" =>              --ROL Reg
 				tmp:= std_logic_vector(shift_left(unsigned (X1),bt));
 				tmp(0):=X1(bt-1);
@@ -693,19 +687,7 @@ IF rising_edge(clock) THEN
 				when others =>
 					PC<=Di;
 					rest2:=true;
-				end case;
-			when "0111000" =>              -- JLE (Reg,NUM,[reg],[n])
-				If SR(ZR)='1' or (SR(NG)/=SR(OV)) then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;
-			when "0111001" =>              -- JG (Reg,NUM,[reg],[n])
-				If SR(ZR)=bwb and (SR(NG)=SR(OV)) then
-					if fetch then PC<=X;
-					else	PC<=Y1; end if;
-				end if;
-				rest2:=true;   
+				end case;   
 			when "0100011" =>  --PUSHXI POPXI
 				if bwb='0' then
 					AD:=IST;	

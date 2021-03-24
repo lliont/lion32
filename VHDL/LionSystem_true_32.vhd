@@ -20,8 +20,8 @@ entity LionSystem32 is
 		IA : OUT std_logic_vector(1 downto 0);
 		R,G,B,VSYN,HSYN,VSYN2,HSYN2,BRIR,BRIG,BRIB : OUT std_Logic;
 		PB, PG, PR : OUT std_Logic;
-		Tx  : OUT std_logic ;
-		Rx : IN std_logic ;
+		Tx,Tx2  : OUT std_logic ;
+		Rx,Rx2 : IN std_logic ;
 		AUDIOA,AUDIOB,AUDIOC,NOISEO: OUT std_logic;
 		SCLK,MOSI,SPICS: OUT std_logic;
 		MISO: IN std_logic;
@@ -210,7 +210,7 @@ COMPONENT PS2KEYB is
 	(
 		Rx , kclk : IN std_logic ;
 		clk, reset, r : IN std_logic ;
-		data_ready : OUT std_logic;
+		data_ready,caps,shift : OUT std_logic;
 		data_out :OUT std_logic_vector (7 downto 0)
 	);
 end COMPONENT;
@@ -223,7 +223,7 @@ COMPONENT XY_Display_MCP4822 is
 		addr: OUT natural range 0 to 4095;
 		Q: IN std_logic_vector(15 downto 0);
 		CS,SCK,SDI,SDI2,SDI3: OUT std_logic;
-		LDAC: OUT std_logic:='0';
+		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535
@@ -237,7 +237,7 @@ type Sprite_color is array (1 to 4) of std_logic;
 Signal pdelay: natural range 0 to 2047 :=0;
 Signal R0,B0,G0,BRI0,R2,G2,B2,BRI2,R1,G1,B1,BRI1: std_logic:='0';
 Signal SR3,SG3,SB3,SBRI3,SPDET3,SR1,SB1,SG1,SBRI1,SPDET1,SR4,SB4,SG4,SBRI4,SPDET4,SR2,SG2,SB2,SBRI2,SPDET2: std_logic:='0';
-Signal clock0,clock1,clockxy,clockxy2,lfsr_clk:std_logic;
+Signal clock0,clock1,clockxy,clockxy2,lfsr_clk,xyplay:std_logic;
 Signal hsyn0,vsyn0,hsyn1,vsyn1,Vmod: std_logic:='0';
 Signal vq,Do: std_logic_vector (15 downto 0);
 Signal AD,AD_HI,AD2: std_logic_vector (19 downto 0);
@@ -248,7 +248,7 @@ Signal ncnt : std_logic_vector(13 downto 0);
 Signal count,count2,count3 : std_logic_vector(31 downto 0);
 Signal lfsr_bw : std_logic_vector(15 downto 0):="0010000000000000";
 Signal WAud, WAud2,WAud3, PB0, PG0, PR0, WACS: std_logic:='1';
-Signal HOLDA,IO,nen1,nen2,nen3,ne1,ne2,ne3, RDW: std_logic:='0';
+Signal HOLDA,IO,nen1,nen2,nen3,ne1,ne2,ne3, RDW,caps,shift: std_logic:='0';
 Signal rst, rst2, AS, DS, RW, Int_in,vint,vint0,vint1,hint,hint0,hint1,xyd: std_logic:='1';
 Signal w1,spw1, spw2, spw3, spw4, xyw,xyen: std_logic:='0';
 Signal SPQ1,spvq1,SPQ2,spvq2,SPQ3,spvq3,SPQ4,spvq4,xyq1,xyq2: std_logic_vector(15 downto 0);
@@ -257,8 +257,8 @@ Signal ad1,vad0,vad1 :  natural range 0 to 32767;
 Signal spad1,spad3,spad5,spad7:  natural range 0 to 2047;
 Signal xyadr :  natural range 0 to 4095;
 Signal pperiod: natural range 0 to 65535:=3600;
-Signal sr,sw,sdready,sready,kr,kready,ser2,sdready2, noise: std_Logic;
-Signal sdi,sdo,sdo2,kdo : std_logic_vector (7 downto 0);
+Signal sr,sw,ser2,sw2,sdready,sready,kr,kready,sdready2,sready2, noise: std_Logic;
+Signal sdi,sdo,sdi2,sdo2,kdo : std_logic_vector (7 downto 0);
 Signal Vol1,Vol2,Vol3,Voln : std_logic_vector (7 downto 0):="11111111";
 SIGNAL Spi_in,Spi_out: STD_LOGIC_VECTOR (7 downto 0);
 Signal Spi_w, spi_rdy, play,play2,play3: std_logic;
@@ -267,12 +267,8 @@ Signal BSEL,BSEL_LOW,BSEL_HI,BSEL0,BSEL1: std_logic_vector (1 downto 0);
 Signal spb, sdb: std_logic_vector (7 downto 0):="00000000";
 Signal aligned,VW,VR: boolean;
 Signal SPal: std_logic_vector(15 downto 0):="0111011101110111"; 
---Signal ColBit: std_logic_vector(5 downto 0):="100000";
---Signal PalR: std_logic_vector(8 downto 0):="100001101";   -- 269
---Signal PalG: std_logic_vector(8 downto 0):="011001101";   -- 205
---Signal PalB: std_logic_vector(8 downto 0):="010001101";   -- 141
 
-shared variable Di1,Di2:std_logic_vector(15 downto 0);
+shared variable Di1:std_logic_vector(15 downto 0); --,Di2
 shared variable ramwait1,ramwait2:std_logic:='0';
 shared variable Dbuf,Dbuf2: std_logic_vector (15 downto 0);
 Signal wstate,rstate: natural range 0 to 3:=0;
@@ -303,7 +299,7 @@ XYRAM: dual_port_ram_dual_clock
 	GENERIC MAP (DATA_WIDTH  => 16,	ADDR_WIDTH => 12)
 	PORT MAP ( clockxy2,clock1, xyadr, to_integer(unsigned(AD(12 downto 1))), Do, xyw, xyq1, xyq2, BSEL );
 XYC:XY_Display_MCP4822
-	PORT MAP (clockxy,rst,xyadr,xyq1,SPICS2,SCLK2,MOSI2,MOSI3,MOSI4,LDAC,XYmode,PCM,stereo,pperiod);
+	PORT MAP (clockxy,rst,xyadr,xyq1,SPICS2,SCLK2,MOSI2,MOSI3,MOSI4,LDAC,xyplay,XYmode,PCM,stereo,pperiod);
 VIDEO0: videoRGB80
 	PORT MAP ( clock1,clock0,Vmod,R0,G0,B0,BRI0,VSYN0,HSYN0,vint0,hint0,vad0,vq, hline0);
 VIDEO1: videoRGB1
@@ -322,6 +318,8 @@ SPRTG4: VideoSp
 	PORT MAP ( clock1, clock0,SR4,SG4,SB4,SBRI4,SPDET4,vint,spb(3),sdb(3),spad7,spvq4);
 Serial: UART
 	PORT MAP ( Tx,Rx,clock0,rst,sr,sw,sdready,sready,sdi,sdo );
+Serial2: UART
+	PORT MAP ( Tx2,Rx2,clock0,rst,ser2,sw2,sdready2,sready2,sdi2,sdo2 );
 SoundC1: SoundI
 	PORT MAP (AUDIOA,rst,clock1,Waud,aq,Vol1,harm1,count,play);
 SoundC2: SoundI
@@ -335,7 +333,7 @@ NOIZ:lfsr_II
 CPLL:LPLL32
 	PORT MAP (iClock,PLLrst,Clock0,Clock1,Clockxy,Clockxy2);
 PS2:PS2KEYB
-	PORT MAP (KDATA,KCLK,clock1,rst,kr,kready,kdo);
+	PORT MAP (KDATA,KCLK,clock1,rst,kr,kready,caps,shift,kdo);
 
 	
 rst2<=not reset when rising_edge(clock0);
@@ -359,8 +357,8 @@ ERL<='1' when bacs='1' and AD(0)='0' and RW='0' else '0';  -- external ram
 ERH<='1' when bacs='1' and AD(0)='1' and RW='0' else '0';  -- external ram
 ER_SEL<= AS or not (((AD(16) or AD(17) or AD(18)) and not AD(19)) or ( AD(19) and not (AD(17) or AD(18) or AD(16))));  -- external ram
 
-Di32<= Di2&Di1 when IO='1' and AD(1)='1' 
-  else Di1&Di2 when IO='1' and AD(1)='0' 
+Di32<= ZERO16&Di1 when IO='1' and AD(1)='1' 
+  else Di1&ZERO16 when IO='1' and AD(1)='0' 
   else Qout1&Qout0 when not aligned and (AD(16) OR AD(17) OR AD(18) or AD(19))='0'
   else Qout0&Qout1 when (AD(16) OR AD(17) OR AD(18) or AD(19))='0'
   else Dbuf2&Dbuf2 when (wacs='1' or bacs='1') 
@@ -507,9 +505,12 @@ Vmod<='0' when rst='1' and rising_edge(clock1) else Do(0) when AD=24 and IO='1' 
 
 -- UART SKEYB SPI IO decoding
 sdi<=Do(7 downto 0) when AD=0 and IO='1' and VW and rising_edge(clock1);
+sdi2<=Do(7 downto 0) when AD=1 and IO='1' and VW and rising_edge(clock1);
 sr<=Do(1) when AD=2 and IO='1' and VW and rising_edge(clock1);
-kr<=Do(1) when AD=15 and IO='1' and VW and rising_edge(clock1); 
 sw<=Do(0) when AD=2 and IO='1' and VW and rising_edge(clock1);
+kr<=Do(1) when AD=15 and IO='1' and VW and rising_edge(clock1); 
+ser2<=Do(1) when AD=3 and IO='1' and VW and rising_edge(clock1);
+sw2<=Do(0) when AD=3 and IO='1' and VW and rising_edge(clock1);
 spi_w<=Do(0) when AD=19 and IO='1' and VW and rising_edge(clock1);
 SPICS<=Do(1) when AD=19 and IO='1' and VW and rising_edge(clock1);
 spi_in<=Do(7 downto 0) when AD=18 and IO='1' and VW and rising_edge(clock1);
@@ -544,7 +545,7 @@ SPal<=Do when  AD=40 and IO='1' and VW and rising_edge(clock1);
 process (clock0,VR,IO)
 begin
 	if rising_edge(clock0) and VR AND IO='1'  then
-		Di2:="0000000000000000";
+		--Di2:="0000000000000000";
 		if   (AD(19 downto 15)="00010" 
 		   or AD(19 downto 15)="00001") then Di1:=q16;   --video
 		elsif AD(19 downto 12)="00000100" then Di1:=SPQ1;
@@ -553,13 +554,14 @@ begin
 		elsif AD(19 downto 12)="00000111" then Di1:=SPQ4;
 		elsif AD(19 downto 13)="0001100" then Di1:=xyq2;
 		elsif AD=4 then Di1:="00000000"&sdo; --end if; -- serial1
-		elsif AD=14 then Di1:="00000000"&kdo; --end if; -- serial2 keyboard
-		elsif AD=6 then Di1:="0000000000000" & kready & sdready & sready; --end if; -- serial status
+		elsif AD=5 then Di1:="00000000"&sdo2; --end if; -- serial1
+		elsif AD=14 then Di1:="000000"&caps&shift&kdo; --end if; --keyboard
+		elsif AD=6 then Di1:="00000000000" & sdready2 & sready2 & kready & sdready & sready; --end if; -- serial status
 		elsif AD=16 then Di1:="00000000"&spi_out; --end if; --spi 
 		elsif AD=17 then Di1:="000000000000000" & spi_rdy; --end if; --spi 
-		elsif AD=9 then Di1:="0000000000000"& play3 & play2 & play; --end if; -- audio status
-		elsif AD=20 then Di1:=count(15 downto 0); Di2:=count(15 downto 0); --end if;
-		elsif AD=21 then Di1:=count(31 downto 16); Di2:=count(31 downto 16);  --end if;
+		elsif AD=9 then Di1:="000000000000"& xyplay & play3 & play2 & play; --end if; -- audio status
+		elsif AD=20 then Di1:=count(15 downto 0); --Di2:=count(15 downto 0); --end if;
+		elsif AD=21 then Di1:=count(31 downto 16); --Di2:=count(31 downto 16);  --end if;
 		elsif AD=22 then Di1:="000"&JOYST2&"000"& JOYST1; --end if;     -- joysticks
 		elsif AD=23 then Di1:="00000000000000"&Vsyn&hsyn; --end if;  -- VSYNCH HSYNCH STATUS
 		elsif AD=24 then Di1:="000000000000000"&Vmod; --end if;
@@ -761,7 +763,7 @@ entity PS2KEYB is
 	(
 		Rx,Kclk : IN std_logic ;
 		clk, reset, r : IN std_logic ;
-		data_ready : OUT std_logic:='0';
+		data_ready,caps,shift : OUT std_logic:='0';
 		data_out :OUT std_logic_vector (7 downto 0)
 	);
 end PS2KEYB;
@@ -769,7 +771,7 @@ end PS2KEYB;
 
 Architecture Behavior of PS2KEYB is
 
-constant rblen:natural:=16;
+constant rblen:natural:=8;
 type FIFO_r is array (0 to rblen-1) of std_logic_vector(9 downto 2);
 Signal rFIFO: FIFO_r;
 	attribute ramstyle : string;
@@ -801,7 +803,11 @@ begin
 					rstate<=rstate+1;
 				elsif rstate=10 and Rx='1' then
 					rstate<=0;
-					if (lastkey/="11110000") and (inb(8 downto 1)/="11110000") and (inb(8 downto 1)/="11100000") then
+					if (inb(8 downto 1)="00010010" or inb(8 downto 1)="01011001") then 
+						if lastkey="11110000" then	shift<='0'; else shift<='1'; 	end if; 
+					elsif inb(8 downto 1)="01011000" then
+						if lastkey="11110000" then Caps<= not Caps; end if;
+					elsif (lastkey/="11110000") and (inb(8 downto 1)/="11110000") and (inb(8 downto 1)/="11100000") then
 						if  (lastkey="11100000") then
 							rFIFO(rptr2)<="1010"&inb(4 downto 1);
 						else

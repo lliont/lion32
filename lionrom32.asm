@@ -506,8 +506,10 @@ CFLT_2:
   MOV.D A0,-1  ;// 1st neg  2nd pos
   JMP CFLT_E
 CFLT_3:      ; // both pos
-  AND.D A1,$7FFFFFFF
-  AND.D A3,$7FFFFFFF
+  ;AND.D A1,$7FFFFFFF
+  ;AND.D A3,$7FFFFFFF
+  BCLR A1,31
+  BCLR A3,31
   MOV.D A5,A3
   SRL.D A5,8
   SRL.D A5,15    ;// A5 has exponent 2
@@ -546,7 +548,8 @@ FLMUL:
   AND.D A6,$80000000
   MOV.D A5,A3
   AND.D A3,$007FFFFF  ;// A3 has hi part of fraction A4 the rest
-  AND.D A5,$7FFFFFFF
+  ;AND.D A5,$7FFFFFFF
+  BCLR  A5,31
   SRL.D A5,8   ;// A5 has exponent 2
   SRL.D A5,15
   MOV.D A0,A3
@@ -554,17 +557,20 @@ FLMUL:
   JRNZ 8     ;// if num2 = 0 exit result = num1
   MOVI A1,0
   JMP FMUL_E
-  OR.D A3,$800000
+  ;OR.D A3,$800000
+  BSET  A3,23
   SUB.D A5,127
   MOV.D A7,A1
   AND.D A1,$007FFFFF   ;// A1 has hi part of fraction A2 the rest
-  AND.D A7,$7FFFFFFF
+  ;AND.D A7,$7FFFFFFF
+  BCLR  A7,31
   SRL.D A7,8      ;// A7 has exponent 1
   SRL.D A7,15
   MOV.D A0,A1
   OR.D A0,A7
   JZ FMUL_E
-  OR.D A1,$800000
+  ;OR.D A1,$800000
+  BSET  A1,23
   SUB.D A7,127
   ADD.D A7,A5
   MULU.D A1,A3
@@ -605,7 +611,8 @@ FLDIV:
   AND.D A6,$80000000
   MOV.D A2,A3
   AND.D A3,$007FFFFF  ;// A3 has fraction 
-  AND.D A2,$7FFFFFFF
+  ;AND.D A2,$7FFFFFFF
+  BCLR  A2,31
   SRL.D A2,8     ;// A2 has exponent 2
   SRL.D A2,15
   MOV.D A0,A2
@@ -614,17 +621,19 @@ FLDIV:
   MOV.D A1,$7f800000
   OR.D  A1,A6
   JMP FDIV_E
-  OR.D A3,$800000
+  ;OR.D A3,$800000
+  BSET  A3,23
   MOV.D A7,A1
   AND.D A1,$007FFFFF    ;// A1 has hi part of fraction A2 the rest
-  AND.D A7,$7FFFFFFF
+  ;AND.D A7,$7FFFFFFF
+  BCLR  A7,31
   SRL.D A7,8       ;// A7 has exponent 1
   SRL.D A7,15
   MOV.D A0,A1
   OR.D  A0,A7
   JZ FDIV_E
-  OR.D A1,$800000
-
+  ;OR.D A1,$800000
+  BSET  A1,23
   ADD.D A7,127
   SUB.D A7,A2
   SLL.D A1,8
@@ -671,17 +680,20 @@ FLADD:
   MOV.D A6,A3
   MOV.D A5,A3
   AND.D A3,$007FFFFF  ;// A3 has hi part of fraction A4 the rest
-  AND.D A5,$7FFFFFFF
+  ;AND.D A5,$7FFFFFFF
+  BCLR  A5,31
   SRL.D A5,8    ;// A5 has exponent 2
   SRL.D A5,15
   MOV.D A0,A3
   OR.D A0,A5
   JZ FADD_E      ;// if num2 = 0 exit result = num1
-  OR.D A3,$800000
+  ;OR.D A3,$800000
+  BSET A3,23
   MOV.D A0,A1
   MOV.D A7,A1
   AND.D A1,$007FFFFF  ; // A1 has hi part of fraction A2 the rest
-  AND.D A7,$7FFFFFFF
+  ;AND.D A7,$7FFFFFFF
+  BCLR  A7,31
   SRL.D A7,8    ;// A7 has exponent 1
   SRL.D A7,15
   PUSHI A0
@@ -692,7 +704,8 @@ FLADD:
   MOV.D A1,A6
   JMP FADD_E
 FADD_9:
-  OR.D A1,$800000
+  ;OR.D A1,$800000
+  BSET A1,23
   CMP.D A7,A5   ;//  make A1A2 the bigger number
   JA FADD_3
   JZ FADD_4
@@ -1267,15 +1280,15 @@ TFF2:		CMP.B	(A2),(A4)
 		JXAB	A4,TFF2
 		POPI	A4
 		POPI	A2
-		ADD.D	A2,26
-		MOV	A0,(A2)
+		;ADD.D	A2,26
+		MOV	A0,26(A2)
 		SWAP	A0
-		ADDI  A2,2
-		MOV.D	A1,(A2)
-		SWAP	A1	;FILE SIZE
+		;ADDI  A2,2
+		MOV.D	A1,28(A2)
+		SWAP	A1	         ;FILE SIZE
 		SWAP.D A1
 		SWAP	A1
-		SUB.D	A2,28
+		;SUB.D	A2,28
 		JMP	TFF5
 TFF3:		POPI	A4
 		POPI	A2
@@ -2269,40 +2282,25 @@ UDIV8:	SRL.D		A3,1
 
 ; -------------------------------------
 SKEYBIN:	
-		IN	A0,6  ;Read serial byte if availiable
+		IN	A0,6  ;Read key byte if availiable
 		BTST	A0,2  ;Result in A1, A0(2)=0 if not avail
 		JZ	INTEXIT
 		IN	A1,14
 		OUT	15,2
 		OUT	15,0
-		CMP 	A1,$12
-		JNZ	SKB1
-		MOV.B (SHIFT),1
-		JMP	SKEXT
-SKB1:		CMP	A1,$59
-		JNZ   SKB2
-		MOV.B (SHIFT),1
-		JMP	SKEXT		
-SKB2:		CMP   A1,$58
-		JNZ   INTEXIT
-		MOV.B	(SHIFT),0
-		MOV.B	A1,(CAPSL)
-		XOR.B	A1,1
-		MOV.B	(CAPSL),A1
-SKEXT:	MOVI	A0,0
 		RETI
 ;---------------------------------------
 KEYB:		
 		PUSHXI
-		CMP	A1,$5A 
+		CMP.B	A1,$5A 
 		JNZ	NOTCR
 		MOVI	A1,13
 		JMP	KB10
-NOTCR:	CMP	A1,$66
+NOTCR:	CMP.B	A1,$66
 		JNZ	NOTBS
 		MOVI	A1,8
 		JMP	KB10
-NOTBS:	CMP	A1,$76
+NOTBS:	CMP.B	A1,$76
 		JNZ	KB1
 		MOV	A1,27
 		JMP	KB10		
@@ -2311,23 +2309,21 @@ KB1:		SETX 	55           ; Convert Keyboard scan codes to ASCII
 KB3:		CMP.B	A1,(A0)
 		JZ	KB4
 		JXAB	A0,KB3
-		;MOV	A1,0
 		JMP	KB10
 KB4:		SUB.D A0,KEYBCD
-		CMP.B   (CAPSL),1
-		JNZ   KB2
-		CMP.B (SHIFT),1
-		JZ	KB2
+		BTST  A1,9
+		JZ   KB2
+		BTST A1,8
+		JNZ	KB2
 		ADD.D   A0,KEYASCC
 		JMP	KB6
-KB2:		CMP.B (SHIFT),1
-		JNZ   KB5
+KB2:		BTST  A1,8
+		JZ   KB5
 		ADD.D   A0,KEYASCS
 		JMP   KB6
 KB5:		ADD.D	A0,KEYASC
 KB6:        MOV.B A1,(A0)
-KB10:		MOV.B (SHIFT),0
-		POPXI
+KB10:		POPXI
 		RETI
 
 KEYBCD	DB    $29,$45,$16,$1E,$26,$25,$2E,$36,$3D,$3E,$46,$1C,$32,$21,$23,$24,$2B,$34,$33,$43,$3B,$42,$4B

@@ -16,7 +16,7 @@ entity XY_Display_MCP4822 is
 		addr: OUT natural range 0 to 4095;
 		Q: IN std_logic_vector(15 downto 0);
 		CS,SCK,SDI,SDI2,SDI3: OUT std_logic;
-		LDAC: OUT std_logic:='0';
+		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535
@@ -64,7 +64,7 @@ begin
 		if (lpcm/=pcm) or (reset='1') or (pcm='1' and mode='0') then
 			mcnt:=0; mcnt2:=0; lowbyte:='0'; spi_w<='0'; 
 			caddr:=0; swait:='0'; onetime:='0'; cs<='1';
-			x<="0000000000"; y<="0000000000"; Z<="00000000";
+			x<="0000000000"; y<="0000000000"; Z<="00000000"; isplaying<='0'; 
 			cnt:=0; restart:=1; cx:=0; cy:=0; LDAC<='0';  lpcm:=pcm;
 		else
 			if PCM='0' then
@@ -130,10 +130,11 @@ begin
 				if restart=1 then mcnt:=0; cnt:=0; restart:=0; 
 				elsif restart=2 then mcnt:=7; restart:=0; elsif swait='0' then mcnt:=mcnt+1; end if;
 			else --  PCM ------------------------------------------------------------------------------------------
+			   if (caddr/=4095) and (mode='1') then isplaying<='1'; else isplaying<='0';   end if;
 				case mcnt2 is
 				when 0 =>
 					swait:='0';  cs<='1';
-					if mode='0' then mcnt2:=8; end if;
+					--if mode='0' then mcnt2:=8; end if;
 					y(9 downto 0)<=Q(7 downto 0)&"00"; 
 					x(9 downto 0)<=Q(15 downto 8)&"00";
 					z<="00000000";
@@ -170,7 +171,7 @@ begin
 				when others=>
 					swait:='0'; cs<='1'; 
 				end case;
-				if swait='0' then 
+				if swait='0' or mode='0' then 
 					if mcnt2<pperiod then mcnt2:=mcnt2+1; else mcnt2:=0; lowbyte:=not lowbyte; end if; 
 				end if;
 			end if; -- PCM
