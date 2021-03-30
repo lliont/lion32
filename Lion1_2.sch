@@ -13462,28 +13462,6 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <label x="110.49" y="113.9825" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
-<net name="3V3" class="0">
-<segment>
-<pinref part="JP1" gate="A" pin="4"/>
-<wire x1="177.165" y1="55.245" x2="167.64" y2="55.245" width="0.1524" layer="91"/>
-<label x="167.64" y="55.245" size="1.778" layer="95"/>
-</segment>
-<segment>
-<wire x1="194.945" y1="38.1" x2="184.785" y2="38.1" width="0.1524" layer="91"/>
-<label x="191.135" y="38.1" size="1.778" layer="95"/>
-<pinref part="JP10" gate="A" pin="6"/>
-</segment>
-<segment>
-<wire x1="194.31" y1="43.18" x2="184.785" y2="43.18" width="0.1524" layer="91"/>
-<label x="191.135" y="43.18" size="1.778" layer="95"/>
-<pinref part="JP10" gate="A" pin="2"/>
-</segment>
-<segment>
-<wire x1="194.31" y1="40.64" x2="184.785" y2="40.64" width="0.1524" layer="91"/>
-<label x="191.135" y="40.64" size="1.778" layer="95"/>
-<pinref part="JP10" gate="A" pin="4"/>
-</segment>
-</net>
 <net name="N$1" class="0">
 <segment>
 <pinref part="R3" gate="G$1" pin="2"/>
@@ -14647,11 +14625,12 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <label x="133.985" y="62.23" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="N$85" class="0">
+<net name="RX2" class="0">
 <segment>
 <pinref part="U7" gate="-36" pin="KL"/>
 <pinref part="JP15" gate="A" pin="3"/>
 <wire x1="133.985" y1="59.69" x2="151.765" y2="59.69" width="0.1524" layer="91"/>
+<label x="133.985" y="59.69" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="IA[0]" class="0">
@@ -15003,7 +14982,7 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <wire x1="119.0625" y1="170.815" x2="119.6975" y2="170.815" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$24" class="0">
+<net name="TX2" class="0">
 <segment>
 <wire x1="103.505" y1="59.69" x2="116.84" y2="59.69" width="0.1524" layer="91"/>
 <wire x1="116.84" y1="59.69" x2="116.84" y2="60.96" width="0.1524" layer="91"/>
@@ -15012,6 +14991,7 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <wire x1="145.7325" y1="62.23" x2="151.765" y2="62.23" width="0.1524" layer="91"/>
 <pinref part="JP15" gate="A" pin="2"/>
 <pinref part="U7" gate="-35" pin="KL"/>
+<label x="102.87" y="59.69" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="GND8_1" class="0">
@@ -15196,6 +15176,26 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <wire x1="-20.955" y1="110.49" x2="-27.94" y2="110.49" width="0.1524" layer="91"/>
 <label x="-27.94" y="111.125" size="1.778" layer="95"/>
 </segment>
+<segment>
+<wire x1="194.31" y1="43.18" x2="184.785" y2="43.18" width="0.1524" layer="91"/>
+<label x="191.135" y="43.18" size="1.778" layer="95"/>
+<pinref part="JP10" gate="A" pin="2"/>
+</segment>
+<segment>
+<wire x1="194.31" y1="40.64" x2="184.785" y2="40.64" width="0.1524" layer="91"/>
+<label x="191.135" y="40.64" size="1.778" layer="95"/>
+<pinref part="JP10" gate="A" pin="4"/>
+</segment>
+<segment>
+<wire x1="194.945" y1="38.1" x2="184.785" y2="38.1" width="0.1524" layer="91"/>
+<label x="191.135" y="38.1" size="1.778" layer="95"/>
+<pinref part="JP10" gate="A" pin="6"/>
+</segment>
+<segment>
+<pinref part="JP1" gate="A" pin="4"/>
+<wire x1="177.165" y1="55.245" x2="167.64" y2="55.245" width="0.1524" layer="91"/>
+<label x="167.64" y="55.245" size="1.778" layer="95"/>
+</segment>
 </net>
 <net name="3V3_7" class="0">
 <segment>
@@ -15205,8 +15205,10 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 </segment>
 <segment>
 <pinref part="U7" gate="-4" pin="KL"/>
-<wire x1="133.985" y1="100.33" x2="136.525" y2="100.33" width="0.1524" layer="91"/>
 <label x="133.985" y="100.33" size="1.778" layer="95"/>
+<pinref part="JP15" gate="A" pin="1"/>
+<wire x1="133.985" y1="100.33" x2="151.765" y2="100.33" width="0.1524" layer="91"/>
+<wire x1="151.765" y1="100.33" x2="151.765" y2="64.77" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <label x="-39.37" y="146.685" size="1.778" layer="95"/>
