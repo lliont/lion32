@@ -2522,6 +2522,6 @@ FMEMORG     DS    4 ; free ram origin
 XX          DS    1
 YY          DS    1
 RESERVED    DS    14
-
+ORG $5000
 START:	
 
