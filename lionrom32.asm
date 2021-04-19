@@ -8,7 +8,7 @@ VSBLOCK     EQU		96770
 HSBLOCK     EQU		96780
 SCRLBUF     EQU         96790
 XDIM		EQU		640    ; XDIM Screen Horizontal Dim. 
-XDIM22	EQU		320     ; mode xdim /2
+XDIM22	EQU		320     ; mode xdim 
 YDIM		EQU		240    ; Screen Vertical Dimention
 YDIM2		EQU		200
 XCC		EQU	80   ; Horizontal Lines
@@ -38,6 +38,7 @@ BOOTC:	CLI
 		MOV.D        A1,ISTACK
 		ADD.D		 A1,508
 		SETISP       A1
+            MOV.D		(FMEMORG),START
 		MOV.B		(VMODE),0
 		MOV.B		(BCOL),$03
 		MOV.B		(FCOL),$FF
@@ -82,7 +83,7 @@ MEMOK:	MOV		A2,$3404
 		CMP.D		A6,$00FFFFFF
 		JC		MEMTST
 		
-MEMNOK:	MOV.D		(MAXMEM),A6
+MEMNOK:	MOV.D		(MEMTOP),A6
 		MOVI	A0,0
 		INT	4 
 		MOVI	A0,7
@@ -178,7 +179,7 @@ INT4T11	DA		SPI_INIT ; initialize spi sd card
 INT4T12	DA		SPIS     ; spi send/rec byt in A1 mode A2 1=CS low 3=CS h res a0
 INT4T13	DA		READSEC  ; read in buffer at A2, n in A1
 INT4T14	DA		WRITESEC ; WRITE BUFFER at A2 TO A1 BLOCK
-INT4T15	DA		VSCROLL  ; 
+INT4T15	DA		VSCROLL  ; roll
 
 ;  INT5 FUNCTION TABLE  function in a0
 INT5T0	DA		INTEXIT   ; Ex fixed point multiply A1*A2
@@ -188,7 +189,7 @@ INT5T3	DA		VMOUNT   ; Load First Volume, return A0=fat root 1st cluster
 INT5T4	DA		FILEDEL  ; Delete file A4 points to filename
 INT5T5	DA		FILESAV  ; Save memory to file A4 filename, a6 address, a7 size
 INT5T6	DA		UDIV     ; Unsigned 32bit  Div A2 by A1 res in A1,A0
-INT5T7      DA		INTEXIT  ; 
+INT5T7      DA		MEMALOC  ; Reserve mem above and adjust FMEMORG A1=bytes  A0=new FMO
 INT5T8      DA		INTEXIT  ; 
 INT5T9      DA		FLMUL    ; float mult A1A2*A3A4 res A1A2 
 INT5T10     DA		FLDIV    ; float div A1A2/A3A4 res A1A2
@@ -196,8 +197,8 @@ INT5T11     DA		FLADD    ; float add A1A2+A3A4 res A1A2
 INT5T12     DA		FCMP     ; float cmp  A1A2,A3A4 res A0 
 INT5T13     DA		LDSCR    ; Load Screen A4 fname @A3 
 INT5T14     DA          LINEXY   ; plot a line a1,a2 to a3,a4
-INT5T15	DA		HSCROLL  ;
-INT5T16	DA		FINDF    ;  A4 pointer to filename, A0 return cluster relative to (FSTCLST)
+INT5T15	DA		HSCROLL  ; roll
+INT5T16	DA		FINDF    ;  A4 ptr to filename, A0->cluster relative to (FSTCLST)
 INT5T17	DA		CIRC     ; Circle A1,A2,A3                                   
 
 
@@ -217,6 +218,22 @@ INTR5:	SRCLR		4
 		SLL.D		A0,2
 		ADD.D		A0,INT5T0
 		JMP		(A0)
+
+
+
+MEMALOC:
+		MOV.D A0,(FMEMORG)
+            ADD.D	A0,A1
+		CMP.D A0,(MEMTOP)
+		JRC   4
+		MOVI  A0,0
+  		RETI
+		BTST	A0,0  ; word align
+		JRZ	2
+		ADDI	A0,1
+		MOV.D	(FMEMORG),A0
+            RETI
+
 ;---------------------------------------------------
 
 ; General Horizontal Scroll INT5 A0=15 for MODE 1
@@ -288,6 +305,7 @@ HSCRL3:	SETX 	A3
 		MOV.D	A4,SCRLBUF
 		IN	A2,2+HSBLOCK   ; lines
 		SUBI	A3,1
+		PUSHI	A1 ; store fill pos
 HSCRL5:	SETX 	A3
 		MOV.D	A0,A1
 		ITOI.B A0,A4
@@ -296,6 +314,7 @@ HSCRL5:	SETX 	A3
 		SUBI  A2,1
 		JNZ	HSCRL5
 		SRCLR 4
+		POPI	A0
 		JMP	HS1EX
 
 HS1NG:	NEG	A5
@@ -337,6 +356,7 @@ HSCRL9:	SETX 	A3
 		SUB.D	A1,A3
 		MOV.D	A4,SCRLBUF
 		IN	A2,2+HSBLOCK   ; lines
+		PUSHI	A1
 		SUBI	A3,1
 HSCRL11:	SETX 	A3
 		ITOI.B  A1,A4
@@ -344,7 +364,8 @@ HSCRL11:	SETX 	A3
 		ADD.D	A1,320
 		SUBI  A2,1
 		JNZ	HSCRL11
-
+		POPI	A0
+	
 HS1EX:	POPI	A5
 		POPI	A4
 		POPI	A3
@@ -417,12 +438,14 @@ VSCRL2:	SETX	A3
 		MOV.D	A4,SCRLBUF
 		MOV.D	A2,A5
 		IN	A5,6+VSBLOCK    ; length pix
+		PUSHI	A1
 VSCRL3:	SETX  A3
 		ITOI  A1,A4
 		ADD.D	A1,320
 		ADD.D A4,A5
 		SUBI	A2,1
 		JNZ	VSCRL3
+		POPI	A0
 		JMP	VS1EX
 
 VS1NG:	NEG   A6
@@ -464,13 +487,15 @@ VSCRL5:	SETX	A3
 		JNZ	VSCRL5
 		MOV.D	A4,SCRLBUF
 		MOV.D	A2,A5
-		IN	A5,6+VSBLOCK  
+		IN	A5,6+VSBLOCK
+		PUSHI A1  
 VSCRL6:	SETX  A3
 		ITOI  A1,A4
 		SUB.D	A1,320
 		ADD.D A4,A5
 		SUBI	A2,1
 		JNZ	VSCRL6
+		POPI	A0
 		
 VS1EX:	POPI	A6
 		POPI	A5
@@ -2489,10 +2514,14 @@ SECPFAT	DS	2 ; Sectors per Fat
 FATROOT	DS	2 ; fat root dir
 SDHC        DS    1 ; is the sd hc ?
 SDERROR     DS    1 ; sd card #error
-MAXMEM      DS    4 ; max memory
+MEMTOP      DS    4 ; max memory
 BCOL		DS    1
 FCOL		DS    1
 HINT		DS 	6
+FMEMORG     DS    4 ; free ram origin
+XX          DS    1
+YY          DS    1
+RESERVED    DS    14
 
 START:	
 

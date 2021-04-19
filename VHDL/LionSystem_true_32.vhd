@@ -3,8 +3,8 @@
 
 Library ieee;
 USE ieee.std_logic_1164.all;
-USE ieee.std_logic_unsigned.all ;
-USE ieee.numeric_std.all ;
+USE ieee.std_logic_unsigned.all;
+USE ieee.numeric_std.all;
 
 entity LionSystem32 is
 	port
@@ -69,8 +69,8 @@ Component lfsr_II is
   port (
     cout   :out std_logic;      -- Output
     clk    :in  std_logic;      -- Input rlock
-    reset  :in  std_logic;       -- Input reset
-	 Vol    :in std_logic_vector(7 downto 0)
+    reset  :in  std_logic       -- Input reset
+	 --Vol    :in std_logic_vector(7 downto 0)
 	 --bw     :in std_logic_vector(15 downto 0) --band width
   );
 end Component;
@@ -259,7 +259,7 @@ Signal xyadr :  natural range 0 to 4095;
 Signal pperiod: natural range 0 to 65535:=3600;
 Signal sr,sw,ser2,sw2,sdready,sready,kr,kready,sdready2,sready2, noise: std_Logic;
 Signal sdi,sdo,sdi2,sdo2,kdo : std_logic_vector (7 downto 0);
-Signal Vol1,Vol2,Vol3,Voln : std_logic_vector (7 downto 0):="11111111";
+Signal Vol1,Vol2,Vol3 : std_logic_vector (7 downto 0):="11111111";
 SIGNAL Spi_in,Spi_out: STD_LOGIC_VECTOR (7 downto 0);
 Signal Spi_w, spi_rdy, play,play2,play3: std_logic;
 Signal XYmode,PCM, stereo, BACS, HINT_EN,BRI,PLLrst:std_Logic:='0';
@@ -329,7 +329,7 @@ SoundC3: SoundI
 MSPI: SPI 
 	PORT MAP ( SCLK,MOSI,MISO,clock1,rst,spi_w,spi_rdy,spi_in,spi_out);
 NOIZ:lfsr_II
-	PORT MAP ( noise, lfsr_clk, rst, Voln);
+	PORT MAP ( noise, lfsr_clk, rst);
 CPLL:LPLL32
 	PORT MAP (iClock,PLLrst,Clock0,Clock1,Clockxy,Clockxy2);
 PS2:PS2KEYB
@@ -524,7 +524,7 @@ aq3<=Do(15 downto 0) when  AD=12 and IO='1' and VW and rising_edge(clock1);  -- 
 Vol1<=Do(7 downto 0) when AD=25 and IO='1' and VW and rising_edge(clock1);   -- port 25
 Vol2<=Do(7 downto 0) when  AD=26 and IO='1' and VW and rising_edge(clock1);  -- port 26
 Vol3<=Do(7 downto 0) when  AD=27 and IO='1' and VW and rising_edge(clock1);  -- port 27
-Voln<=Do(7 downto 0) when  AD=28 and IO='1' and VW and rising_edge(clock1);  -- port 28
+--Voln<=Do(7 downto 0) when  AD=28 and IO='1' and VW and rising_edge(clock1);  -- port 28
 ne1<=Do(0) when  AD=11 and IO='1' and VW and rising_edge(clock1);    -- noise enable 11
 ne2<=Do(1) when  AD=11 and IO='1' and VW and rising_edge(clock1);    -- noise enable 11
 ne3<=Do(2) when  AD=11 and IO='1' and VW and rising_edge(clock1);    -- noise enable 11
@@ -565,6 +565,7 @@ begin
 		elsif AD=22 then Di1:="000"&JOYST2&"000"& JOYST1; --end if;     -- joysticks
 		elsif AD=23 then Di1:="00000000000000"&Vsyn&hsyn; --end if;  -- VSYNCH HSYNCH STATUS
 		elsif AD=24 then Di1:="000000000000000"&Vmod; --end if;
+		elsif AD=30 then Di1:=std_logic_vector(to_unsigned(xyadr, Di1'length));
 		elsif AD=35 then Di1:=hline; --end if;
 		end if;
 	end if;

@@ -267,7 +267,7 @@ constant l2:natural:=l1+lno*2;
 
 type sprite_dim is array (0 to spno*4+3) of natural range 0 to 511;
 type sprite_line_data is array (spno downto 0) of std_logic_vector(63 downto 0);
-type dist is array (0 to spno) of natural range 0 to 4095;
+type dist is array (0 to spno) of natural range 0 to 2047;
 type sprite_enable is array (0 to spno) of std_logic;
 
 shared variable addr1: natural range 0 to 2047;
@@ -301,6 +301,12 @@ begin
 			if dbuffer='0' then datab:=sd1; else datab:=sd2; end if;
 		elsif  vidc then 
 			if (lines>=l1 and lines<l2 and pixel>=p1 and pixel<p2) then			
+--				blv:=to_integer(unsigned(blvec));
+--				if blv<14 then
+--					BRGB:=SLData(blv)(3+d1(blv) downto d1(blv)); det:='1';
+--				else 
+--					det:='0'; BRGB:="0000";
+--				end if;
 				case blvec is
 				when "0000" => 	
 					BRGB:=SLData(0)(3+d1(0) downto d1(0)); det:='1';
@@ -393,20 +399,20 @@ begin
 				end if;
 			end if;
 			
-			if (d1(0)<maxd*4) and (d2(0)<maxd) and (SEN(0)='1') and (SLData(0)(3+d1(0) downto d1(0))/="1111") then blvec:="0000"; end if;
-			if (d1(1)<maxd*4) and (d2(1)<maxd) and (SEN(1)='1') and (SLData(1)(3+d1(1) downto d1(1))/="1111") then blvec:="0001"; end if;
-			if (d1(2)<maxd*4) and (d2(2)<maxd) and (SEN(2)='1') and (SLData(2)(3+d1(2) downto d1(2))/="1111") then blvec:="0010"; end if;
-			if (d1(3)<maxd*4) and (d2(3)<maxd) and (SEN(3)='1') and (SLData(3)(3+d1(3) downto d1(3))/="1111") then blvec:="0011"; end if;
-			if (d1(4)<maxd*4) and (d2(4)<maxd) and (SEN(4)='1') and (SLData(4)(3+d1(4) downto d1(4))/="1111") then blvec:="0100"; end if;
-			if (d1(5)<maxd*4) and (d2(5)<maxd) and (SEN(5)='1') and (SLData(5)(3+d1(5) downto d1(5))/="1111") then blvec:="0101"; end if;
-			if (d1(6)<maxd*4) and (d2(6)<maxd) and (SEN(6)='1') and (SLData(6)(3+d1(6) downto d1(6))/="1111") then blvec:="0110"; end if;
-			if (d1(7)<maxd*4) and (d2(7)<maxd) and (SEN(7)='1') and (SLData(7)(3+d1(7) downto d1(7))/="1111") then blvec:="0111"; end if;
-			if (d1(8)<maxd*4) and (d2(8)<maxd) and (SEN(8)='1') and (SLData(8)(3+d1(8) downto d1(8))/="1111") then blvec:="1000"; end if;
-			if (d1(9)<maxd*4) and (d2(9)<maxd) and (SEN(9)='1') and (SLData(9)(3+d1(9) downto d1(9))/="1111") then blvec:="1001"; end if;
-			if (d1(10)<maxd*4) and (d2(10)<maxd) and (SEN(10)='1') and (SLData(10)(3+d1(10) downto d1(10))/="1111") then blvec:="1010"; end if;
-			if (d1(11)<maxd*4) and (d2(11)<maxd) and (SEN(11)='1') and (SLData(11)(3+d1(11) downto d1(11))/="1111") then blvec:="1011"; end if;
-			if (d1(12)<maxd*4) and (d2(12)<maxd) and (SEN(12)='1') and (SLData(12)(3+d1(12) downto d1(12))/="1111") then blvec:="1100"; end if;
-			if (d1(13)<maxd*4) and (d2(13)<maxd) and (SEN(13)='1') and (SLData(13)(3+d1(13) downto d1(13))/="1111") then blvec:="1101"; end if;			
+			if (d1(0)<maxd*4) and (d2(0)<maxd) and (SEN(0)='1') and (SLData(0)(3+d1(0) downto d1(0))/="1111") then blvec:="0000"; --end if;
+			elsif (d1(1)<maxd*4) and (d2(1)<maxd) and (SEN(1)='1') and (SLData(1)(3+d1(1) downto d1(1))/="1111") then blvec:="0001"; --end if;
+			elsif (d1(2)<maxd*4) and (d2(2)<maxd) and (SEN(2)='1') and (SLData(2)(3+d1(2) downto d1(2))/="1111") then blvec:="0010"; --end if;
+			elsif (d1(3)<maxd*4) and (d2(3)<maxd) and (SEN(3)='1') and (SLData(3)(3+d1(3) downto d1(3))/="1111") then blvec:="0011"; --end if;
+			elsif (d1(4)<maxd*4) and (d2(4)<maxd) and (SEN(4)='1') and (SLData(4)(3+d1(4) downto d1(4))/="1111") then blvec:="0100"; --end if;
+			elsif (d1(5)<maxd*4) and (d2(5)<maxd) and (SEN(5)='1') and (SLData(5)(3+d1(5) downto d1(5))/="1111") then blvec:="0101"; --end if;
+			elsif (d1(6)<maxd*4) and (d2(6)<maxd) and (SEN(6)='1') and (SLData(6)(3+d1(6) downto d1(6))/="1111") then blvec:="0110"; --end if;
+			elsif (d1(7)<maxd*4) and (d2(7)<maxd) and (SEN(7)='1') and (SLData(7)(3+d1(7) downto d1(7))/="1111") then blvec:="0111"; --end if;
+			elsif (d1(8)<maxd*4) and (d2(8)<maxd) and (SEN(8)='1') and (SLData(8)(3+d1(8) downto d1(8))/="1111") then blvec:="1000"; --end if;
+			elsif (d1(9)<maxd*4) and (d2(9)<maxd) and (SEN(9)='1') and (SLData(9)(3+d1(9) downto d1(9))/="1111") then blvec:="1001"; --end if;
+			elsif (d1(10)<maxd*4) and (d2(10)<maxd) and (SEN(10)='1') and (SLData(10)(3+d1(10) downto d1(10))/="1111") then blvec:="1010"; --end if;
+			elsif (d1(11)<maxd*4) and (d2(11)<maxd) and (SEN(11)='1') and (SLData(11)(3+d1(11) downto d1(11))/="1111") then blvec:="1011"; --end if;
+			elsif (d1(12)<maxd*4) and (d2(12)<maxd) and (SEN(12)='1') and (SLData(12)(3+d1(12) downto d1(12))/="1111") then blvec:="1100"; --end if;
+			elsif (d1(13)<maxd*4) and (d2(13)<maxd) and (SEN(13)='1') and (SLData(13)(3+d1(13) downto d1(13))/="1111") then blvec:="1101"; end if;			
 --			if (d1(14)<maxd*4) and (d2(14)<maxd) and (SEN(14)='1') and (SLData(14)(3+d1(14) downto d1(14))/="1111") then blvec:="1110"; end if;		
 		end if;
 	end if; --reset
@@ -533,8 +539,8 @@ entity lfsr_II is
   port (
     cout   :out std_logic;		-- Output of the counter
     clk    :in  std_logic;    -- Input rlock
-    reset  :in  std_logic;     -- Input reset
-	 Vol    :in std_logic_vector(7 downto 0)
+    reset  :in  std_logic     -- Input reset
+	 --Vol    :in std_logic_vector(7 downto 0)
 	 --bw     :in std_logic_vector(15 downto 0) --band width
   );
 end entity;
@@ -544,18 +550,13 @@ architecture rtl of lfsr_II is
     signal linear_feedback,temp: std_logic:='0';
 begin
     linear_feedback <= not(count(19) xor count(2));
-
 	 process (clk, reset) 
 	 begin
 		  if (reset = '1') then
 				count <= (others=>'0'); --cnt:=0;
 		  elsif (rising_edge(clk)) then
-				count <= ( count(18) & count(17)& count(16) & count(15)&
-							count(14) & count(13) & count(12) & count(11)&
-							count(10) & count(9) & count(8) & count(7)&
-							count(6) & count(5) & count(4) & count(3) 
-						  & count(2) & count(1) & count(0) & linear_feedback);
-				if vol > to_integer(unsigned(count(7 downto 0))) then temp<=count(19); else temp<='0'; end if;
+				count <= ( count(18 downto 0) & linear_feedback);
+				temp<=count(19);
 		  end if;
 	 end process;
 	 cout <=temp; -- count(19) when vol > to_integer(unsigned(count(7 downto 0)));
@@ -600,11 +601,7 @@ begin
 		  elsif (rising_edge(clk)) then
 				cnt:=cnt+1;
 				if cnt=to_integer(unsigned(bw&"111")) then
-					count <= ( count(18) & count(17)& count(16) & count(15)&
-								count(14) & count(13) & count(12) & count(11)&
-								count(10) & count(9) & count(8) & count(7)&
-								count(6) & count(5) & count(4) & count(3) 
-							  & count(2) & count(1) & count(0) & linear_feedback);
+					count <= ( count(18 downto 0) & linear_feedback);
 					if vol > to_integer(unsigned(count(7 downto 0))) then temp<=count(19); else temp<='0'; end if;
 					cnt:=0;
 				end if;
