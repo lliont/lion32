@@ -20,7 +20,7 @@ YCC2		EQU	25
 INT0_3      DA		RHINT0 ; hardware interrupts (ram)
 		DA          RHINT1 ; (ram)
 		DA		RHINT2 ; (ram)
-		DA		HINT   ; (rom)
+		DA		HINT   ; (ram)
 INT4        DA        	INTR4     ; interrupt vector 4 system calls
 INT5 		DA		INTR5	    ; fixed point & fat routines
 INT6        DA          RINT6     ; address in ram
@@ -47,7 +47,7 @@ BOOTC:	CLI
 		MOV.D		A1,COLTBL
 		NTOI		A1,$1F1F		
 		MOV		(SDFLAG),0
-		MOV		 A0,$8400
+		MOV		 A0,$8400 ; fill initially with RETI
 		MOV		(HINT),A0
 		MOV		(RHINT0),A0
 		MOV		(RHINT1),A0
@@ -203,7 +203,7 @@ INT5T17	DA		CIRC     ; Circle A1,A2,A3
 
 
 ;Hardware interrupt
-;HINT:		ADD		(COUNTER),1
+;HINT:		;ADD		(COUNTER),1
 INTEXIT:	RETI        ; trace interrupt
 		
 INTR4:		
@@ -2517,7 +2517,7 @@ SDERROR     DS    1 ; sd card #error
 MEMTOP      DS    4 ; max memory
 BCOL		DS    1
 FCOL		DS    1
-HINT		DS 	6
+HINT		DS 	6 ;hardware int 3
 FMEMORG     DS    4 ; free ram origin
 XX          DS    1
 YY          DS    1
