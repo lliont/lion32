@@ -13,12 +13,16 @@ Liontiny32.asm is the Basic source file that when compiled and it's output Liont
 
 Lion1.sch and Lion1.brd are eagle files for the Lion base board.
 
+Lionc directory contains small-c for Lion files, cc.exe the compiler, Lionlink.exe - llink.exe the linker, clib.bin is the library
+
 Theodoulos Liontakis.
 
 Project Pages:
 
+https://hackaday.io/project/162876-lion-fpga-cpucomputer
+
 http://users.sch.gr/tliontakis/index.php/my-projects/13-vhdl-cpu
 
-https://hackaday.io/project/162876-lion-fpga-cpucomputer
+
 
 

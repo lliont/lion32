@@ -692,7 +692,28 @@ IF rising_edge(clock) THEN
 				when others =>
 					PC<=Di;
 					rest2:=true;
-				end case;   
+				end case;  
+			when "0111000" =>              -- IRET IJSR
+				if bwb='1' then
+					case TT is
+					when 0 =>
+						AD:=IST+4; AS<='0'; IST<=IST+4;    
+					when 1 =>
+					when others =>
+						PC<=Di;
+						rest2:=true;
+					end case;	
+				else 
+					case TT is
+					when 0 =>
+						AD:=IST;	AS<='0'; RW<='0';  Do:=PC;	DS<='0';    
+					when 1 =>
+					when others =>
+						IST<=IST-4; 
+						if fetch then PC<=X; else	PC<=Y1; end if;
+						rest2:=true;
+					end case;
+				end if;
 			when "0100011" =>  --PUSHXI POPXI
 				if bwb='0' then
 					AD:=IST;	

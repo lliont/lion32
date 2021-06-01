@@ -305,16 +305,16 @@ VIDEO0: videoRGB80
 VIDEO1: videoRGB1
 	PORT MAP ( clock1,clock0,Vmod,R1,G1,B1,BRI1,R2,G2,B2,BRI2,VSYN1,HSYN1,vint1,hint1,vad1,vq, hline1);
 SPRTG1: VideoSp
-	GENERIC MAP (DATA_LINE  => 3)
+	GENERIC MAP (DATA_LINE  => 1)
 	PORT MAP ( clock1, clock0,SR1,SG1,SB1,SBRI1,SPDET1,vint,spb(0),sdb(0),spad1,spvq1);
 SPRTG2: VideoSp
-	GENERIC MAP (DATA_LINE  => 2)
+	GENERIC MAP (DATA_LINE  => 3)
 	PORT MAP ( clock1, clock0,SR2,SG2,SB2,SBRI2,SPDET2,vint,spb(1),sdb(1),spad3,spvq2);
 SPRTG3: VideoSp
-	GENERIC MAP (DATA_LINE  => 1)
+	GENERIC MAP (DATA_LINE  => 5)
 	PORT MAP ( clock1, clock0,SR3,SG3,SB3,SBRI3,SPDET3,vint,spb(2),sdb(2),spad5,spvq3);
 SPRTG4: VideoSp
-	GENERIC MAP (DATA_LINE  => 4)
+	GENERIC MAP (DATA_LINE  => 7)
 	PORT MAP ( clock1, clock0,SR4,SG4,SB4,SBRI4,SPDET4,vint,spb(3),sdb(3),spad7,spvq4);
 Serial: UART
 	PORT MAP ( Tx,Rx,clock0,rst,sr,sw,sdready,sready,sdi,sdo );
@@ -772,7 +772,7 @@ end PS2KEYB;
 
 Architecture Behavior of PS2KEYB is
 
-constant rblen:natural:=8;
+constant rblen:natural:=16;
 type FIFO_r is array (0 to rblen-1) of std_logic_vector(9 downto 2);
 Signal rFIFO: FIFO_r;
 	attribute ramstyle : string;

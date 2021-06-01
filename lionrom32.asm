@@ -15,6 +15,7 @@ XCC		EQU	80   ; Horizontal Lines
 YCC		EQU	30     ; Vertical Rows
 XCC2		EQU	53
 YCC2		EQU	25
+MAXFILES    EQU	12
 
 	  	ORG 		0    ; Rom 
 INT0_3      DA		RHINT0 ; hardware interrupts (ram)
@@ -39,6 +40,8 @@ BOOTC:	CLI
 		ADD.D		 A1,508
 		SETISP       A1
             MOV.D		(FMEMORG),START
+		MOV.D		(FMEMLPTR),START
+		MOV.D		(FMEMLOWL),START
 		MOV.B		(VMODE),0
 		MOV.B		(BCOL),$03
 		MOV.B		(FCOL),$FF
@@ -79,7 +82,7 @@ MEMOK:	MOV		A2,$3404
 		MOV.D		A0,A6
 		BTST		A0,1
 		JRNZ		6
-		JSR		PRNHEX
+		IJSR		PRNHEX
 		CMP.D		A6,$00FFFFFF
 		JC		MEMTST
 		
@@ -109,14 +112,14 @@ SDOKO:	MOVI		A0,5        ; sd card ok
 		CMP		(SDFLAG),256
 		JNZ		SDNOT
 		MOV.D		A4,BOOTBIN
-		JSR		FINDFN        ; Find BOOT.BIN
+		IJSR		FINDFN        ; Find BOOT.BIN
 		CMP		A0,0
 		JZ		SDNOT
 		PUSHI		A0
 		PUSHI		A1
 		MOV		A0,A1
 		MOV	      A2,$2804
-		JSR		PRNHEX
+		IJSR		PRNHEX
 		MOVI		A0,5           
 		MOV.D		A1,SDBOK
 		MOV		A2,$0104
@@ -125,7 +128,7 @@ SDOKO:	MOVI		A0,5        ; sd card ok
 		POPI		A0
 		MOV.D		A3,START
 		MOV		A4,A0
-		JSR		FLOAD   ; Load boot file
+		IJSR		FLOAD   ; Load boot file
 		STI
 		JMP		START  ; address at RAM
 SDNOT:
@@ -157,7 +160,7 @@ PHX2:		MOVI	A0,4
 		POPI	A1
 		POPI	A0
 		POPXI
-		RET 
+		IRET 
 
 
 ;   End of boot code
@@ -180,6 +183,14 @@ INT4T12	DA		SPIS     ; spi send/rec byt in A1 mode A2 1=CS low 3=CS h res a0
 INT4T13	DA		READSEC  ; read in buffer at A2, n in A1
 INT4T14	DA		WRITESEC ; WRITE BUFFER at A2 TO A1 BLOCK
 INT4T15	DA		VSCROLL  ; roll
+INT4T16	DA		OPENFILE ; open A1=type A4=ptr to fname, A0=ID success A0=0 failure
+INT4T17     DA		CLOSEFILE ; A1=file handle
+INT4T18     DA          FREAD    ; A1=File handle  A2=number of bytes A3=pointer to buffer
+INT4T19     DA		FSEEK    ; A1=file handle  A2=new pos
+INT4T20     DA		FGETPOS  ; A1=file handle, A0=file pos
+INT4T21     DA		FGETSZ   ; A1=file handle, A0=file size
+INT4T22	DA		FWRITE   ; A1=file handle, A2=byte
+
 
 ;  INT5 FUNCTION TABLE  function in a0
 INT5T0	DA		INTEXIT   ; Ex fixed point multiply A1*A2
@@ -190,7 +201,7 @@ INT5T4	DA		FILEDEL  ; Delete file A4 points to filename
 INT5T5	DA		FILESAV  ; Save memory to file A4 filename, a6 address, a7 size
 INT5T6	DA		UDIV     ; Unsigned 32bit  Div A2 by A1 res in A1,A0
 INT5T7      DA		MEMALOC  ; Reserve mem above and adjust FMEMORG A1=bytes  A0=new FMO
-INT5T8      DA		INTEXIT  ; 
+INT5T8      DA		MEMFREE  ; free memory A1=bytes A2=base mem
 INT5T9      DA		FLMUL    ; float mult A1A2*A3A4 res A1A2 
 INT5T10     DA		FLDIV    ; float div A1A2/A3A4 res A1A2
 INT5T11     DA		FLADD    ; float add A1A2+A3A4 res A1A2 
@@ -219,10 +230,10 @@ INTR5:	SRCLR		4
 		ADD.D		A0,INT5T0
 		JMP		(A0)
 
-
-
-MEMALOC:
+MEMALOC:	PUSHXI
+		PUSHI A2
 		MOV.D A0,(FMEMORG)
+		PUSHI	A0
             ADD.D	A0,A1
 		CMP.D A0,(MEMTOP)
 		JRC   4
@@ -232,7 +243,23 @@ MEMALOC:
 		JRZ	2
 		ADDI	A0,1
 		MOV.D	(FMEMORG),A0
+		POPI	A0
+		MOV.D	A2,A1
+		SRL.D	A2,1
+		SETX	A2
+		NTOM	A0,0  ; fill with 0
+		POPI	A2
+		POPXI	
             RETI
+
+MEMFREE:	PUSHI	A3
+		MOV.D	A3,(FMEMORG)
+		SUB.D	A3,A1
+		CMP.D A3,A2
+		JNZ   MFEXIT
+		MOV.D (FMEMORG),A2
+MFEXIT:	POPI	A3
+		RETI
 
 ;---------------------------------------------------
 
@@ -802,14 +829,14 @@ FADD_E:
 SFATC:
 	PUSHI A0
 	PUSHI A1
-	JSR	DELAY
+	IJSR	DELAY
 	ADD	A1,(SECPFAT)   ; add second fat offset
 	MOVI	A0,14
 	INT	4      ; Save FAT copy
-	JSR	DELAY
+	IJSR	DELAY
 	POPI A1
 	POPI A0
-	RET
+	IRET
 
 ;---------INT5 A0=5 Save -----------------------------
 ; A4 filename, a6 address, a7 size
@@ -849,20 +876,20 @@ FRFT2:
 	ADD	A1,A4
 	MOV.D	A2,SDCBUF2
 	INT	4    ; Save FAT
-	JSR   SFATC ; Save fat copy
+	IJSR   SFATC ; Save fat copy
 FRFT5: 
 	MOV	A0,A3
 	POPI	A4
 	POPI	A3
 	POPI	A2
 	POPI	A1
-	RET
+	IRET
 
 ;---------------------------
 
 SVDATA: 
 	MOV	A3,A0   ;first target cluster
-SVD1:	JSR	DELAY
+SVD1:	IJSR	DELAY
 	MOVI  A4,0
 	MOV	A4,A3
 	SRL	A4,8    ; divide 256
@@ -876,7 +903,7 @@ SVD1:	JSR	DELAY
 	JBE	SVD2
 	ADD.D	A6,512
 	SUB	A7,512
-	JSR	FREEFAT   ; find free fat entry
+	IJSR	FREEFAT   ; find free fat entry
 	CMPI	A0,0     ; Is it full
 	JZ	SVDE
 
@@ -885,7 +912,7 @@ SVD1:	JSR	DELAY
 	SWAP	A0
 	JZ	NORELD
 
-	JSR	DELAY
+	IJSR	DELAY
 	PUSHI	A0
 	MOV	A1,(FSTFAT)
 	ADD	A1,A4
@@ -894,7 +921,7 @@ SVD1:	JSR	DELAY
 	INT	4
 	POPI	A0
 NORELD:
-	JSR	DELAY
+	IJSR	DELAY
 	AND	A3,$00FF
 	SLL	A3,1
 	ADD.D	A3,SDCBUF2   ;store next cluster
@@ -908,8 +935,7 @@ NORELD:
 	ADD	A1,A4
 	MOVI	A0,14
 	INT	4
-      JSR	DELAY
-	JSR	SFATC    ; save to fat copy
+	IJSR	SFATC    ; save to fat copy
 	POPI	A3
 	JMP	SVD1
 SVD2:	
@@ -925,14 +951,14 @@ SVD2:
 	MOV	(A3),$FFFF
 	MOV.D	A2,SDCBUF2
 	MOV	A1,(FSTFAT)
-	JSR	DELAY
+	IJSR	DELAY
 	ADD	A1,A4
 	MOVI	A0,14
 	INT	4         ;write $FFFF 
-	JSR	SFATC    ; save to fat copy 
+	IJSR	SFATC    ; save to fat copy 
 	MOV	A0,256    ; and exit ok
 SVDE:
-	RET
+	IRET
 ;----------------------------
 
 FILESAV:
@@ -944,7 +970,7 @@ FILESAV:
 	PUSHI	A5	
 	PUSHI	A6
 	PUSHI	A7
-	JSR	FINDFN
+	IJSR	FINDFN
 	CMPI	A0,0
 	JZ	FSV7
 	MOVI	A0,0
@@ -958,7 +984,7 @@ FSV4:	MOV	A1,(CURDIR)
 	INT	4              ; Load Root Folder 1st sector
 	MOVI	A0,0
 	MOVI	A3,0
-	JSR	DELAY
+	IJSR	DELAY
 FSV1:	
 	CMP.B (A2),0
 	JZ	FSV2
@@ -988,7 +1014,7 @@ FSV2:	                 ; Found free slot
 	SWAP	A7
 	SWAP.D A7  
 	SUBI	A2,4
-	JSR	FREEFAT     ; free
+	IJSR	FREEFAT     ; free
 	CMPI	A0,0
 	JZ	FSVE
 	PUSHI	A0
@@ -999,9 +1025,11 @@ FSV2:	                 ; Found free slot
 	ADD	A1,A5
 	MOV.D	A2,SDCBUF1
 	INT	4         ; save header
-	JSR	DELAY
+	IJSR	DELAY
 	POPI	A0        ; CLUSTER NUM
-	JSR	SVDATA
+	PUSHI	A0
+	IJSR	SVDATA
+	POPI  A0
 	JMP	FSVE
 FSV3:	
 	ADD	A2,32
@@ -1035,7 +1063,7 @@ FILEDEL:
 	PUSHI	A3
 	PUSHI	A4
 	PUSHI	A5	
-	JSR	FINDFN
+	IJSR	FINDFN
 	CMPI	A0,0
 	JZ	FDELX
 	MOV.B	(A2),$E5  ; Delete file entry
@@ -1045,7 +1073,7 @@ FILEDEL:
 	ADD	A1,A5
 	MOV.D	A2,SDCBUF1
 	INT	4          ; save file header
-	JSR	DELAY
+	IJSR	DELAY
 FDL1:	
 	MOVI  A5,0
 	MOV	A5,A4
@@ -1063,8 +1091,8 @@ FDL1:
 	MOV	(A5),0  ; free cluster
 	MOVI	A0,14
 	INT	4        ; write fat back
-	JSR	DELAY
-	JSR	SFATC  ; write fat copy
+	IJSR	DELAY
+	IJSR	SFATC  ; write fat copy
 	SWAP	A4
 	CMP	A4,$FFF0 ; EOF
 	JAE	FDELX
@@ -1089,7 +1117,7 @@ VMOUNT:
 	MOVI	A1,0
 	MOV.D	A2,SDCBUF1
 	INT	4             ; read MBR
-	JSR	DELAY
+	IJSR	DELAY
       CMP	A0,256
 	JNZ	VMEX
 	MOV.D	A2,SDCBUF1      
@@ -1131,11 +1159,11 @@ VMEX:	POPI	A2
 
 ;-------------------------------------------------
 ; INT 5,A0=13 Load screen
-LDSCR:	JSR	FINDFN   
+LDSCR:	IJSR	FINDFN   
 		MOV.D	A4,A0
 		CMPI	A0,0
 		JZ	INTEXIT
-		JSR	SCLOAD
+		IJSR	SCLOAD
 		RETI
 
 ;-------------------------------------------------
@@ -1184,27 +1212,27 @@ SLDE:	POPI	A6
 	POPI	A3
 	POPI	A2
 	POPI	A1
-	RET 
+	IRET 
 
 
 
 ;---------------------------------------------------
 ; INT 5,A0=2 Load file at A3, ->A1 size
 FILELD:	PUSHI	A5
-		JSR	FINDFN    
+		IJSR	FINDFN    
 		MOV.D	A4,A0
 		CMPI	A0,0
 		JZ	FLEXIT
-		JSR	FLOAD
+		IJSR	FLOAD
 FLEXIT:	POPI	A5
 		RETI
 ;-------------------------------------------------
 
 DELAY: PUSHXI
-	SETX	64000
+	SETX	50000
 LDDL: JMPX	LDDL    ;delay
 	POPXI
-	RET
+	IRET
 
 FLOAD:	; A4 #cluster, A3 Dest address, A1 size
 	PUSHI	A1
@@ -1241,7 +1269,7 @@ _NOTLAST1:
 	INT 	4               ; Load sector
 	CMP.D A7,512
  	JG    _NOTLAST2
-	SUBI	A7,1
+	SUBI	A7,1 
 	SETX	A7
 	POPI	A3
 	MOV.D	A2,SDCBUF2
@@ -1267,13 +1295,13 @@ FLXT: POPI	A7
 	POPI	A3
 	POPI	A2
 	POPI	A1
-	RET 
+	IRET 
 
 FINDF:
 	PUSHI	A1
 	PUSHI	A2
 	PUSHI	A5
-	JSR	FINDFN
+	IJSR	FINDFN
 	POPI	A5
 	POPI	A2
 	POPI	A1
@@ -1291,7 +1319,7 @@ TFF4:		MOV	A1,(CURDIR)
 		ADD	A1,A5
 		MOVI	A0,13
 		MOV.D	A2,SDCBUF1
-		INT	4              ; Load Root Folder 1st (next) sector
+		INT	4              ; Load directory sector
 		MOVI	A0,0
 		MOVI	A3,0
 TFF1:		CMP.B (A2),0
@@ -1305,15 +1333,13 @@ TFF2:		CMP.B	(A2),(A4)
 		JXAB	A4,TFF2
 		POPI	A4
 		POPI	A2
-		;ADD.D	A2,26
+		MOVI	A0,0
 		MOV	A0,26(A2)
 		SWAP	A0
-		;ADDI  A2,2
 		MOV.D	A1,28(A2)
 		SWAP	A1	         ;FILE SIZE
 		SWAP.D A1
 		SWAP	A1
-		;SUB.D	A2,28
 		JMP	TFF5
 TFF3:		POPI	A4
 		POPI	A2
@@ -1334,7 +1360,7 @@ TFF6:		MOVI	A0,0
 TFF5:		POPI	A4
 		POPI	A3
 		POPXI
-		RET
+		IRET
 
 
 
@@ -1345,8 +1371,8 @@ WRITESEC:
 	SETX	5
 WRSCR:
 	MOVI	A0,14
-	JSR	WSEC
-	JSR 	DELAY
+	IJSR	WSEC
+	IJSR 	DELAY
 	CMP	A0,256
 	JRZ	6
 	JMPX	WRSCR
@@ -1378,25 +1404,25 @@ WSLP:	;SLLL	A3,A4 ; multiply 512 to convert block to byte
 WSHC:
 	MOVI	A2,1
 	MOV 	A1,$FF  ; send clocks 
-	JSR	SPIS
+	IJSR	SPIS
 
 	MOV 	A1,$58  ; write block
-	JSR	SPIS
+	IJSR	SPIS
 	MOVLH	A1,A3
-	JSR	SPIS
+	IJSR	SPIS
 	MOV.B	A1,A3
-	JSR	SPIS
+	IJSR	SPIS
 	MOVLH	A1,A4
-	JSR	SPIS
+	IJSR	SPIS
 	MOV.B	A1,A4
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$01 
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX 10
 WRS0:
 	MOV	A1,$FF  
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,0
 	JRZ	6
 	JMPX	WRS0
@@ -1404,23 +1430,23 @@ WRS0:
 	JNZ	WSHC
 
 	MOV	A1,$FF  
-	JSR	SPIS
+	IJSR	SPIS
 
 	MOV	A1,$FE    ; SEND START OF DATA
-	JSR	SPIS	
+	IJSR	SPIS	
 
 	POPI 	A3         ;	MOV	A3,SDCBUF1    ; buffer
 	SETX	511        ; WRITE DATA 512 BYTES + 2 CRC bytes
 WRI6:	MOV.B	A1,(A3)
-	JSR	SPIS
+	IJSR	SPIS
 	JXAB	A3,WRI6
-	JSR	SPIS  ; CRC
+	IJSR	SPIS  ; CRC
 	MOVI	A1,1
-	JSR	SPIS  ; CRC
+	IJSR	SPIS  ; CRC
 
 	SETX	9999          ; READ ANSWER until $05 is found
 WRS8:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	AND	A0,$001F
 	CMPI.B A0,$5
 	JRZ	6
@@ -1432,7 +1458,7 @@ WRS8:	MOV	A1,$FF
 
 	SETX	19999          ; READ ANSWER until no $00 is found
 WRS9: MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,0
 	JRNZ	6
 	JMPX	WRS9
@@ -1443,14 +1469,14 @@ WRS9: MOV	A1,$FF
 	MOV	A0,$0100  ; ALL OK
 
 WRIF:	MOV 	A1,$FF  ; send clocks 
-	JSR	SPIS
+	IJSR	SPIS
 	OUT	19,2
 	POPI	A4
 	POPI	A3
 	POPI	A2
 	POPI	A1
 	POPXI
-	RET
+	IRET
 
 ;-----------------------------------------
 
@@ -1459,13 +1485,13 @@ READSEC:
 	SETX	4
 RDSCR:
 	MOVI	A0,13
-	JSR	READSC
-	JSR	DELAY
+	IJSR	READSC
+	IJSR	DELAY
 	CMP	A0,256
 	JRNZ	RDSCR ;6
 	;JMPX	RDSCR
 	POPXI
-	;JSR	PRNHEX
+	;IJSR	PRNHEX
 	RETI
 READSC:
 	PUSHXI
@@ -1491,24 +1517,24 @@ RSLP:	SLL.D	A4,9 ; multiply 512 to convert block to byte
 RSHC:	OUT	19,0
 	MOVI	A2,1
 	MOV 	A1,$FF  ; send 8 clocks 
-	JSR	SPIS
+	IJSR	SPIS
 
 	MOV 	A1,$51  ; READ block
-	JSR	SPIS
+	IJSR	SPIS
 	MOVLH	A1,A3
-	JSR	SPIS
+	IJSR	SPIS
 	MOV.B	A1,A3
-	JSR	SPIS
+	IJSR	SPIS
 	MOVLH	A1,A4
-	JSR	SPIS
+	IJSR	SPIS
 	MOV.B	A1,A4
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$01 
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX	9999          ; READ ANSWER until $FE is found
 RDS5:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMP.B	A0,$FE
 	JZ	SDRD2
 	JMPX	RDS5
@@ -1521,12 +1547,12 @@ SDRD2:
 	JNZ	RDIF       ; data ready ?
 	SETX	513        ; READ DATA 512 BYTES + 2 CRC bytes
 RDI6:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	MOV.B	(A3),A0
 	JXAB	A3,RDI6
 
 	MOV 	A1,$FF  ; send clocks 
-	JSR	SPIS
+	IJSR	SPIS
 
 	MOV.B (SDERROR),0
 	MOV	A0,$0100  ; ALL OK
@@ -1538,7 +1564,7 @@ RDIF: OUT	19,2
 	POPI	A2
 	POPI	A1
 	POPXI
-	RET
+	IRET
 
 
 ;----------------------------------------------
@@ -1554,7 +1580,7 @@ SPIC: IN	A0,17
 	JNZ	SPIC
 	IN	A0,16
 	POPI	A2
-	RET
+	IRET
 
 ;--------------- * SD CARD INIT * ----------------
 SPI_INIT:
@@ -1572,31 +1598,31 @@ SPIN:	MOV	A0,40
 	SETX	7
 	MOVI	A2,3
 SPI0: MOV	A1,255	
-	JSR	SPIS
+	IJSR	SPIS
 	JMPX	SPI0    ; SEND 80 CLK PULSES WITH CS HIGH
 	
 	OUT   19,0
-	JSR 	DELAY
+	IJSR 	DELAY
 	MOVI	A2,1
 	;MOV	A1,$FF	
-	;JSR	SPIS
+	;IJSR	SPIS
 	
 	MOV 	A1,$40  ; RESET IN SPI MODE   
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$0
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$95
-	JSR	SPIS	
+	IJSR	SPIS	
 
 	SETX	7	         ;READ RESPONCES 8 
 SPI3:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,1
 	JZ	SPNF
-	JSR	DELAY
+	IJSR	DELAY
 	JMPX	SPI3
 	
 	ADDI 	A3,1	
@@ -1607,24 +1633,24 @@ SPNF:
 ; ----- CMD 8 --------------
 
 	OUT	19,2
-	JSR	DELAY
+	IJSR	DELAY
 	OUT	19,0	
 
 	MOV 	A1,$48  ; spi cmd 8
-	JSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$00
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$01
-	JSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$AA
-	JSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$87 ; $86
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX  7         ; READ 8 ANSWERS
 SP8:  MOV	 A1,$FF
-	JSR	 SPIS
+	IJSR	 SPIS
 	CMPI.B A0,1
 	JBE	 SP8X
 	JMPX  SP8
@@ -1632,16 +1658,16 @@ SP8:  MOV	 A1,$FF
 
 SP8X:	SETX	3         ; read 4 more
 SP82: MOV	 A1,$FF
-	JSR	 SPIS
+	IJSR	 SPIS
 	JMPX	 SP82
 SP8END:
 ;------------- CMD 55 + ACMD 41 ------------
 	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	MOV	A3,0
 SPN55:
 	OUT	19,2
-	JSR	DELAY
+	IJSR	DELAY
 	OUT	19,0
 	;MOV	A1,$FF
 	;JSR	SPIS
@@ -1652,18 +1678,18 @@ SPN55:
 	INC	A3
 
 	MOV 	A1,$77  ; spi cmd 55
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$00
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$01 
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX   7         ; READ 8 ANSWERS
 SP55: MOV	 A1,$FF
-	JSR	 SPIS
+	IJSR	 SPIS
 	CMPI.B A0,1
 	JBE	 SP55X
       JMPX   SP55
@@ -1671,25 +1697,25 @@ SP55: MOV	 A1,$FF
 SP55X:
 
 	MOV 	A1,$69  ; INITIALIZE spi cmd 41
-	JSR	SPIS
+	IJSR	SPIS
 	MOV	A1,$40  ; $00 or $40 for SDHC support
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$00
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$01
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	 SETX	7         ; READ 8 ANSWERS
 SP413: MOV	A1,$FF
-	 JSR	SPIS
+	 IJSR	SPIS
 	 CMPI.B A0,0
 	 JZ	SKIPCMD1
        JMPX SP413
 
 	SETX	19
-BIGD: JSR	DELAY
+BIGD: IJSR	DELAY
 	JMPX	BIGD
 
 	JMP	SPN55
@@ -1703,24 +1729,24 @@ TRYCMD1:
 	MOV	A3,0
 SPNT:	MOVI	A0,1
 	OUT	19,2
-	JSR	DELAY
+	IJSR	DELAY
 	OUT	19,0
 	CMP	A3,50
 	MOVI	A0,11
 	JA	SPIF
 	MOV 	A1,$41  ; INITIALIZE spi
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$0
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,01 
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX	7         ; READ 8 ANSWERS
 SPI2:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,0
 	JZ	SPNX
 	JMPX	SPI2
@@ -1731,36 +1757,36 @@ SPNX:
 ;---- CMD 58 ---------------------
 SKIPCMD1:
 	OUT	19,2
-	JSR	DELAY
+	IJSR	DELAY
 	OUT	19,0
 	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 
-	JSR DELAY
+	IJSR DELAY
 	MOV 	A1,$7A  ; GET 
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$0
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$01
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX	7          ; READ ANSWER
 SPI7:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,0
 	JZ	SP58NX
 	JMPX	SPI7
 	JMP	SP58SK
 SP58NX:
 	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	PUSHI	A0
-	JSR	SPIS
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	POPI	A0
 	BTST	A0,6    ; Is it SDHC
 	JZ	SP58SK
@@ -1772,23 +1798,23 @@ SP58SK:
 	;JSR	SPIS
 
 	OUT	19,2
-	JSR	DELAY
+	IJSR	DELAY
 	OUT	19,0
 	MOV 	A1,$50  ; SET TRANSFER SIZE
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$0
-	JSR	SPIS
-	JSR	SPIS
+	IJSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$02
-	JSR	SPIS
+	IJSR	SPIS
 	MOVI 	A1,$0
-	JSR	SPIS
+	IJSR	SPIS
 	MOV 	A1,$01
-	JSR	SPIS 
+	IJSR	SPIS 
 
 	SETX	7          ; READ ANSWER
 SPI4:	MOV	A1,$FF
-	JSR	SPIS
+	IJSR	SPIS
 	CMPI.B A0,0
 	JZ	SPSNX
 	JMPX	SPI4
@@ -1800,7 +1826,7 @@ SPSNX:
       ; read master boot 
 	MOVI	A1,0
 	MOV.D	A2,SDCBUF1
-	JSR	READSC
+	IJSR	READSC
 	
 	
 
@@ -2157,7 +2183,7 @@ CIRPLT:
 	ADD	A1,(CIRCX)	
 	MOVI	A0,2
 	INT	4         ; 4 octant
-	RET
+	IRET
 
 CIRC:	
 	PUSHI 	A1
@@ -2170,9 +2196,9 @@ CIRC:
 	MOV	(CIRCY),A2  
 	MOV	A5,A3  ; A3=r A5=x
 	MOVI	A6,0	 ; A6=y
-	JSR	CIRPLT
+	IJSR	CIRPLT
 	XCHG	A5,A6
-	JSR	CIRPLT
+	IJSR	CIRPLT
 	XCHG	A5,A6
 	MOVI	A7,1   ; A7=P
 	SUB	A7,A3  ; P=1-r
@@ -2188,9 +2214,9 @@ CIR1:	CMP	A5,A6
 	SUB	A7,A5
 	SUB	A7,A5
 CIR2:	ADD	A7,A0
-	JSR	CIRPLT
+	IJSR	CIRPLT
 	XCHG	A5,A6
-	JSR	CIRPLT
+	IJSR	CIRPLT
 	XCHG	A5,A6
 	JMP	CIR1
 CIRX:	POPI	A7
@@ -2350,6 +2376,506 @@ KB5:		ADD.D	A0,KEYASC
 KB6:        MOV.B A1,(A0)
 KB10:		POPXI
 		RETI
+
+FGETSZ:
+	MOV.D A0,18(A1)
+	RETI
+
+FGETPOS:
+	MOV.D A0,14(A1)
+	RETI
+
+FSEEK: PUSHI A3
+	 MOVI	A0,1
+	 MOV.B A3,(A1)
+	 BTST A3,7
+	 JZ FSKEXT
+	 MOVI	A0,0
+	 MOV.B A3,1(A1)
+	 CMP.B A3,114    ; is it readonly
+	 JNZ  FSEK1      ; 
+	 MOV.D A3,18(A1) ; file size
+	 CMP.D A2,A3
+	 JB  FSEK1
+	 MOVI	A0,2
+	 SUBI	 A3,1
+	 MOV.D A2,A3
+FSEK1: MOV.D 14(A1),A2
+FSKEXT: POPI A3	 
+	 RETI
+
+; fill buffer at A3 with cluster containing the A1th of a file starting at cluster A4
+FILLBUF:     
+	PUSHI	A1
+	PUSHI	A2
+	PUSHI	A3
+	PUSHI	A4
+	PUSHI	A5
+	PUSHI	A6
+	PUSHI	A7
+	MOV.D	A5,$FFFFFFFF
+	MOV.D	A7,A1
+	MOVI	A1,0
+FB1:	MOVI	A6,0
+	MOV.D	A6,A4
+	SRL	A6,8   ; DIVIDE BY 256
+	CMP	A6,A5
+	JZ    _SKIPBFAT
+	MOV.D	A5,A6
+	MOV	A1,(FSTFAT)
+	ADD	A1,A6
+	MOVI	A0,13
+	MOV.D	A2,SDCBUF2
+	INT	4              ; Load specific cluster FAT
+_SKIPBFAT:
+	MOV	A1,(FSTCLST)
+	ADD	A1,A4
+	SUB	A1,2   ; because cluster start with cluster #2 
+      CMP.D  A7,511
+ 	JG   _NOTBLAST2
+	PUSHI	A1
+	MOV.D A2,A3
+	MOVI	A0,13
+	INT 	4
+	POPI  A0
+	JMP	FBXT
+_NOTBLAST2:
+	SUB.D	A7,512
+	AND.D	A4,$00FF  ; mod 256
+	SLL	A4,1  
+	MOV.D	A2,SDCBUF2
+	ADD.D	A2,A4
+	MOV	A4,(A2)
+	SWAP	A4
+	CMP	A4,0
+	JZ	FBXT
+	CMP	A4,$FFF0
+	JBE	FB1
+FBXT: POPI	A7
+	POPI	A6
+	POPI	A5
+	POPI	A4
+	POPI	A3
+	POPI	A2
+	POPI	A1
+	IRET
+
+
+; A1=File handle  A2=number of bytes A3=pointer to buffer
+; A1 last char read A0=bytes read
+FREAD:
+	PUSHI  A4
+	PUSHI  A5
+	PUSHI	 A6
+	PUSHI  A7
+	MOVI  A0,0
+	CMP.D  A2,0
+	JLE	FREXIT
+	CMP.B (A1),128  ; is it open
+	JB	FREXIT
+      MOV.D  A4,14(A1) ; FILEPOS
+	MOV.D  A5,18(A1) ; FILESIZE
+      MOV.D  A6,10(A1) ; fileblock num in buffer 
+	MOVI	A0,0
+      MOV.D  A7,A5
+	SUB.D  A7,A4 ;filesize-filepos
+	JLE	FREXIT
+	CMP.D  A7,A2                         
+	JNC   FR2
+	MOV.D  A2,A7
+FR2:	CMPI	 A2,1
+	JL    FREXIT
+	PUSHI	A2
+	MOV.D	 A7,A4  ; FILEPOS
+	SRL.D  A7,9
+	CMP.D	 A7,A6
+	JNZ	FR1	; is filepos in current buffer
+FRL4:	MOV.D	A7,A4
+	AND.D A7,$000001FF
+	MOV.D A5,2(A1) ; buffer pointer
+	ADD.D A5,A7
+FRL2:	MOV.B A0,(A5)
+	MOV.B (A3),A0
+ 	ADDI	A3,1
+	ADDI	A5,1
+	ADDI	A4,1  ; inc file pos
+	SUBI	A2,1  ; dec byte count
+	JZ	FR3
+	MOV.D	A7,A4
+	AND.D A7,$000001FF
+	JNZ	FRL2
+FR1:  PUSHI	A0
+	PUSHI	A1     ; bring the next data page in buffer
+	PUSHI	A2
+	PUSHI	A3
+	PUSHI	A4
+	IJSR  FLUSH
+	MOV.D	A7,A4   ;fill buffer at A3 with cluster containing the A1th of a file starting at cluster A4
+	MOV.D	A4,6(A1)
+	MOV.D	A3,2(A1)
+	MOV.D A1,A7
+	IJSR  FILLBUF
+	POPI	A4
+	POPI	A3
+	POPI	A2
+	POPI	A1
+	POPI	A0
+	MOV.D	A6,A4  ; current filepos
+	SRL.D A6,9
+	MOV.D 10(A1),A6 ; update data page num in buffer
+	MOV.D 14(A1),A4  ; update file pos idx
+	JMP	FRL4
+FR3:	MOV.D 14(A1),A4 ; set and exit
+	MOVI	A1,0
+	MOV.B A1,A0
+	POPI	A0
+FREXIT:
+	POPI	A7
+	POPI  A6
+	POPI	A5
+	POPI	A4
+	RETI
+
+
+OPENRD:	CMPI	A0,0
+		JZ	OFEXER
+		MOV.B 1(A6),A7  ; type
+		MOV.B	(A6),128  ; open 
+		MOV.D	18(A6),A1  ; size
+ 		MOV.D	6(A6),A0  ; First Cluster
+		MOVI	A5,0
+		MOV.D 10(A6),A5 ; Cluster in buf
+            MOV.D 14(A6),A5 ; File pos
+		MOVI  A0,7
+		MOV.D A1,514
+		INT   5        ; reserve file buffer
+		MOV.D 2(A6),A0
+		MOV.D A2,A0
+		MOV.D A1,6(A6)  ; load data page-cluster 512 bytes
+		MOVI	A0,0
+		MOV	A0,(FSTCLST)
+ 		ADD.D	A1,A0
+		SUBI	A1,2
+            MOVI	A0,13
+		INT   4
+		MOV.D  A0,A6
+            MOV.D  A1,2(A6)
+		JMP	OFEXIT
+
+WRBUF:     ; write buffer pointed by A3 at A1th cluster of a file starting at cluster A4
+	PUSHI	A1
+	PUSHI	A2
+	PUSHI	A3
+	PUSHI	A4
+	PUSHI	A5
+	PUSHI	A6
+	PUSHI	A7
+	MOV.D	A5,$FFFFFFFF
+	MOV.D	A7,A1
+	MOVI	A1,0
+WFB1:	MOVI	A6,0
+	MOV.D	A6,A4
+	SRL	A6,8   ; DIVIDE BY 256
+	CMP	A6,A5
+	JZ    _SKIPWFAT
+	MOV.D	A5,A6
+	MOV	A1,(FSTFAT)
+	ADD	A1,A6
+	MOVI	A0,13
+	MOV.D	A2,SDCBUF2
+	INT	4              ; Load specific cluster FAT
+_SKIPWFAT:
+	MOV	A1,(FSTCLST)
+	ADD	A1,A4
+	SUB	A1,2   ; because cluster start with cluster #2 
+      CMPI  A7,0
+ 	JG   _NOTWLAST2
+	MOV.D A2,A3
+	MOVI	A0,14
+	INT 	4
+	JMP	FWXT
+_NOTWLAST2:
+	SUBI	A7,1
+	AND.D	A4,$00FF  ; mod 256
+	SLL	A4,1  
+	MOV.D	A2,SDCBUF2
+	ADD.D	A2,A4
+	MOV	A4,(A2)
+	SWAP	A4
+	CMP	A4,0
+	JZ	FWXT
+	CMP	A4,$FFF0
+	JBE	WFB1
+FWXT: POPI	A7
+	POPI	A6
+	POPI	A5
+	POPI	A4
+	POPI	A3
+	POPI	A2
+	POPI	A1
+	IRET
+
+
+; A1=File handle
+FLUSH:
+	PUSHI	A0
+	PUSHI	A1
+	PUSHI	A3
+	PUSHI	A4
+	MOV.B A0,(A1)
+	BTST	A0,0
+	JZ	FLEX
+	BCLR  A0,0
+	MOV.B (A1),A0
+	MOV.D	A0,A1
+	MOV.D	A3,2(A0)
+	MOV.D	A4,6(A0)
+      MOV.D A1,10(A0)
+	IJSR	WRBUF
+FLEX:	POPI	A4
+	POPI  A3
+	POPI	A1
+	POPI  A0
+      IRET
+
+;FTAB:   ; FILE TABLES
+;FSTATUS     DS	1  ;0 Open or not 
+;FATYPE      DS    1  ;1 r w a 
+;FBUFPTR     DS	4  ;2 ptr to buffer
+;FCLSTPTR    DS    4  ;6 first file cluster 
+;FBUFCNUM    DS    4  ;10 no of file page in buffer 
+;FILEPOS	 DS	4  ;14 file position
+;FILESIZE    DS	4  ;18 file size
+;FFNAME      DS	12 ;22 NAME
+;RESTFT      DS    374
+
+; fill buffer at A3 with cluster containing the A1th of a file starting at cluster A4
+
+; A1=file handle
+FWNEWSEC:
+	PUSHI	A1
+	PUSHI	A3
+	PUSHI	A4
+	PUSHI	A6
+	PUSHI	A7
+
+	OR.D  A7,$01FF
+	CMP.D A7,A4
+	JA    NSCE
+	
+NSCE:	POPI	A7
+	POPI	A6
+	POPI	A4
+	POPI	A3
+	POPI	A1
+	IRET
+
+; A1=File handle  A2=byte 
+; A0=error code 0=success
+FWRITE:    
+	PUSHI	 A1
+	PUSHI	 A3
+	PUSHI  A4
+	PUSHI	 A6
+	PUSHI  A7
+	MOVI  A0,1
+	CMP.B (A1),128  ; is it open
+	JC	WREXIT
+	MOVI  A0,2
+	MOV.B A0,1(A1)
+	CMP.B A0,114
+	JZ	WREXIT
+WR1:	MOV.D  A4,14(A1) ; FILEPOS
+	MOV.D  A7,18(A1) ; FILESIZE
+      MOV.D  A6,10(A1) ; fileblock num in buffer 
+	MOVI	A0,0
+	CMP.D  A7,A4 ;filesize-filepos
+	JA	WR2
+	IJSR	FWNEWSEC
+	MOV.D	A7,A4
+	ADDI	A7,1
+	MOV.D 18(A1),A7 ; Set new size
+WR2:  MOV.D	 A7,A4    ; FILEPOS
+	SRL.D  A7,9
+	CMP.D	 A7,A6
+	JNZ	WR3	   ; is filepos in current buffer
+WR4:	MOV.D A7,A4
+	AND.D	A7,$1FF
+	MOV.D	A4,2(A1)
+	ADD.D A4,A7
+	MOV.B (A4),A2 ; Write the byte
+	MOV.B A0,(A1)
+	BSET	A0,0
+	MOV.B (A1),A0 ; Mark buffer dirty
+	MOV.D  A4,14(A1) ; FILEPOS
+	ADDI	A7,1
+	MOV.D 14(A1),A7 ; advance file pointer
+	MOVI	A0,0
+	JMP	WREXIT
+WR3:  PUSHI A1
+	PUSHI	A3
+	PUSHI	A4
+	IJSR  FLUSH
+	MOV.D	A4,6(A1)
+	MOV.D	A3,2(A1)
+	MOV.D A1,14(A1)
+	IJSR  FILLBUF
+	POPI	A4
+	POPI	A3
+	POPI	A1
+	JMP	WR4
+WREXIT:
+	POPI	A7
+	POPI  A6
+	POPI	A4
+	POPI	A3
+	POPI	A1
+	RETI
+
+
+OPENWR:	PUSHI A4
+		CMPI	A0,0
+		JZ    OWR1
+		MOVI  A0,4 ; delete if exitsts
+		INT   5
+OWR1:		MOV.B 1(A6),A7  ; type
+		MOV.B	(A6),128  ; open 
+		MOVI  A0,7
+		MOV.D A1,514
+		INT   5        ; reserve file buffer
+		MOV.D 2(A6),A0
+		SETX	255
+		NTOM  A0,0  ; clear buffer
+		PUSHI	A6
+		MOV.D A6,A0
+		MOV.D	A7,0
+		MOVI	A0,5
+		INT   5   ; Create file
+		POPI  A6
+		MOV.D	6(A6),A0 ;first cluster
+		MOVI	A0,0
+		MOV.D 18(A6),A0
+		MOV.D 14(A6),A0
+            MOV.D 10(A6),A0
+		;IJSR	FINDFN
+		MOV.D	A0,A6
+		POPI  A4
+		JMP	OFEXIT
+
+
+OPENAP:	CMPI	A0,0
+		JZ	OFEXER
+		PUSHI A4
+		MOV.D	6(A6),A0  ; First Cluster
+		MOV.B 1(A6),A7  ; type
+		MOV.B	(A6),128  ; open 
+		MOV.D	18(A6),A1  ; size
+            MOV.D 14(A6),A1 ; File pos (at end of file)
+		MOVI  A0,7
+		MOV.D A1,514
+		INT   5        ; reserve file buffer
+		MOV.D 2(A6),A0
+		MOV.D A2,14(A6)
+		MOV.D	A1,A2
+		SRL.D A1,9
+		MOV.D 10(A6),A1 ; #page in buffer
+		AND.D   A2,$01FF
+		JNZ   OA1      ; is last data page full?
+	      SETX	255
+		NTOM  A0,0
+		JMP	OAEX
+OA1:		; bring the last data page in buffer
+		MOV.D	A4,6(A6)
+		MOV.D	A3,2(A6)
+		MOV.D A1,14(A6)
+		IJSR   FILLBUF ;fill at A3 with the containing A1th of a file starting at A4
+OAEX:		MOV.D  A0,A6
+            MOV.D  A1,2(A6)
+		POPI	A4
+		JMP	OFEXIT
+
+	; A4=&filename STATUS 128=OPENED 0=NOT OPEN 
+OPENFILE:	PUSHI	A2
+		PUSHI	A5
+		PUSHI	A6
+		PUSHI	A7
+		MOV.D A6,FTAB
+		MOV	A0,MAXFILES
+OF1:		CMP.B	(A6),0
+		JZ	OF2
+		ADD.D	A6,34
+		DEC	A0
+		JNZ  OF1
+		MOV.D	A0,-1
+		JMP	OFEXER
+OF2:		PUSHI	A1
+		IJSR	FINDFN
+		POPI	A7
+		CMP.B	(A7),114  ; 'r'
+		JZ    OPENRD
+		CMP.B	(A7),119     ; 'w'
+		JZ    OPENWR
+		CMP.B	(A7),97     ; 'a'
+		JZ    OPENAP
+		MOV.D	A0,-1
+		JMP   OFEXER
+OFEXIT:	ADD.D	A0,22
+		SETX 11
+		MTOM.B A0,A4
+		SUB.D A0,22
+OFEXER:	POPI	A7
+		POPI	A6
+		POPI	A5
+		POPI	A2
+		RETI
+
+; Set file length in directory
+FSETLEN:
+	PUSHI	A1
+	PUSHI	A2
+	PUSHI	A3
+	PUSHI	A4
+	PUSHI	A5
+	MOV.D	A3,18(A1)
+	MOV.D A4,A1
+	ADD.D	A4,22
+	IJSR	FINDFN	
+	SWAP	A3	         ;FILE SIZE
+	SWAP.D A3
+	SWAP	A3
+	MOV.D	28(A2),A3
+	MOV	A1,(CURDIR)
+	ADD	A1,A5
+	MOVI	A0,14
+	MOV.D	A2,SDCBUF1
+	INT	4   ; write directory 
+	POPI	A5
+	POPI	A4
+	POPI	A3
+	POPI	A2
+	POPI	A1
+	IRET
+
+; A1=file handle
+CLOSEFILE:  
+		MOV.B A0,(A1)
+		BTST  A0,0
+		JZ  CLF1
+		IJSR FLUSH
+CLF1:		MOV.B A0,1(A1)
+		CMP.B A0,114
+		JZ  CLF2
+		IJSR FSETLEN
+CLF2:		MOVI A0,0
+		MOV (A1),A0
+		MOV.D 2(A1),A0
+		MOV.D 6(A1),A0
+		MOV.D 10(A1),A0
+		MOV.D 14(A1),A0
+		MOV.D 18(A1),A0
+		MOV.D 22(A1),A0
+		RETI
+
 
 KEYBCD	DB    $29,$45,$16,$1E,$26,$25,$2E,$36,$3D,$3E,$46,$1C,$32,$21,$23,$24,$2B,$34,$33,$43,$3B,$42,$4B
             DB    $3A,$31,$44,$4D,$15,$2D,$1B,$2C,$3C,$2A,$1D,$22,$35,$1A
@@ -2521,7 +3047,22 @@ HINT		DS 	6 ;hardware int 3
 FMEMORG     DS    4 ; free ram origin
 XX          DS    1
 YY          DS    1
-RESERVED    DS    14
+FMEMLOWL    DS	4
+FMEMLPTR    DS	4
+RESERVED    DS    6
+
+ORG 18600
+FTAB:   ; FILE TABLES
+FSTATUS     DS	1  ; bit7=Open, bit0=dirty buffer
+FATYPE      DS    1  ; r w a 
+FBUFPTR     DS	4  ; ptr to buffer
+FCLSTPTR    DS    4  ; first cluster no
+FBUFCNUM    DS    4  ; no of cluster in buffer 
+FILEPOS	DS	4  ; file position
+FILESIZE    DS	4  ; file size
+FFNAME      DS	12 ; NAME
+RESTFT      DS    374
+
 ORG $5000
 START:	
 
