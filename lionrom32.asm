@@ -886,7 +886,7 @@ FRFT5:
 	IRET
 
 ;---------------------------
-
+; A0 first file cluster, A7 data length, A6 source ptr
 SVDATA: 
 	MOV	A3,A0   ;first target cluster
 SVD1:	IJSR	DELAY
@@ -2405,6 +2405,7 @@ FSKEXT: POPI A3
 	 RETI
 
 ; fill buffer at A3 with cluster containing the A1th of a file starting at cluster A4
+; A0 #cluster in buffer
 FILLBUF:     
 	PUSHI	A1
 	PUSHI	A2
@@ -2430,14 +2431,13 @@ FB1:	MOVI	A6,0
 _SKIPBFAT:
 	MOV	A1,(FSTCLST)
 	ADD	A1,A4
-	SUB	A1,2   ; because cluster start with cluster #2 
+	SUB	A1,2   ; because cluster list starts with cluster #2 
       CMP.D  A7,511
  	JG   _NOTBLAST2
-	PUSHI	A1
 	MOV.D A2,A3
 	MOVI	A0,13
 	INT 	4
-	POPI  A0
+	MOV.D A0,A4
 	JMP	FBXT
 _NOTBLAST2:
 	SUB.D	A7,512
@@ -2651,23 +2651,120 @@ FLEX:	POPI	A4
 
 ; fill buffer at A3 with cluster containing the A1th of a file starting at cluster A4
 
-; A1=file handle
+; A1=file handle 
 FWNEWSEC:
-	PUSHI	A1
+	PUSHI	A2
 	PUSHI	A3
 	PUSHI	A4
 	PUSHI	A6
 	PUSHI	A7
-
+	PUSHXI
+	PUSHI	A1 
+	MOV.D A4,14(A1) ; pos
+	MOV.D A7,18(A1) ; size
 	OR.D  A7,$01FF
 	CMP.D A7,A4
 	JA    NSCE
+	IJSR  FLUSH
+	MOV.D A3,2(A1)
+	MOV.D A7,18(A1)
+	MOV.D	A4,6(A1)
+	PUSHI	A1
+	SUBI	A7,1
+	MOV.D A1,A7
+	IJSR  FILLBUF ; fill with last file cluster (returns no in A0)
+	POPI	A1
+	MOV.D	A7,14(A1) ;pos
+	SRL	A7,9
+	MOV.D 10(A1),A7 ; set page in buffer finaly
+	MOV.D	A2,2(A1)
+	SETX	255
+	NTOM	A2,0
+	MOV.D	A7,14(A1) ;pos
+      MOV.D A6,18(A1) ;size
+	SUB.D	A7,A6  ; space in bytes to add
+	ADDI	A7,1
+	MOV.D	A6,A1
+	MOV.D	A3,A0   ;first (last of file) target cluster from FILLBUF
+	MOV.D A4,A3
+	SRL.D	A4,8 
+	JMP	FNS3
+FNS1: IJSR	DELAY
+	MOV.D	A4,A3
+	SRL.D	A4,8    ; divide 256
+	MOV	A1,(FSTCLST)
+	ADD.D	A1,A3   ; to cluster
+	SUBI	A1,2
+	MOVI	A0,14
+	MOV.D	A2,2(A6)
+	INT	4
+	CMP.D	A7,512  ; size
+	JBE	FNS2
+	SUB.D	A7,512
+FNS3:	IJSR	FREEFAT   ; find free fat entry
+	CMPI	A0,0     ; Is it full
+	JZ	NSCE
+
+	SWAP	A0
+	CMP.B A0,A4    ; same fat offset
+	SWAP	A0
+	JZ	FNORELD
+
+	IJSR	DELAY
+	PUSHI	A0
+	MOVI	A1,0
+	MOV	A1,(FSTFAT)
+	ADD	A1,A4
+	MOVI	A0,13
+	MOV.D	A2,SDCBUF2
+	INT	4
+	POPI	A0
 	
-NSCE:	POPI	A7
+FNORELD:
+	IJSR	DELAY
+	AND	A3,$00FF
+	SLL	A3,1
+	ADD.D	A3,SDCBUF2   ;store next cluster
+	SWAP	A0
+	MOV	(A3),A0
+	SWAP	A0
+	PUSHI	A0
+
+	MOV.D	A2,SDCBUF2
+	MOVI  A1,0
+	MOV	A1,(FSTFAT)
+	ADD	A1,A4
+	MOVI	A0,14
+	INT	4
+	IJSR	SFATC    ; save to fat copy
+	POPI	A3
+	JMP	FNS1
+FNS2:	
+	MOV	A1,(FSTFAT)
+	ADD	A1,A4
+	MOVI	A0,13
+	MOV.D	A2,SDCBUF2
+	INT	4
+
+	AND.D	A3,$00FF
+	SLL	A3,1
+	ADD.D	A3,SDCBUF2   ;store last cluster
+	MOV	(A3),$FFFF
+	MOV.D	A2,SDCBUF2
+	MOV	A1,(FSTFAT)
+	IJSR	DELAY
+	ADD	A1,A4
+	MOVI	A0,14
+	INT	4         ;write $FFFF 
+	IJSR	SFATC    ; save to fat copy 
+	MOV	A0,256    ; and exit ok
+NSCE:	POPI	A1
+	POPXI
+	POPI	A7
 	POPI	A6
 	POPI	A4
 	POPI	A3
-	POPI	A1
+	POPI	A2
 	IRET
 
 ; A1=File handle  A2=byte 
@@ -2681,9 +2778,9 @@ FWRITE:
 	MOVI  A0,1
 	CMP.B (A1),128  ; is it open
 	JC	WREXIT
-	MOVI  A0,2
 	MOV.B A0,1(A1)
 	CMP.B A0,114
+	MOVI  A0,2
 	JZ	WREXIT
 WR1:	MOV.D  A4,14(A1) ; FILEPOS
 	MOV.D  A7,18(A1) ; FILESIZE
@@ -2695,7 +2792,13 @@ WR1:	MOV.D  A4,14(A1) ; FILEPOS
 	MOV.D	A7,A4
 	ADDI	A7,1
 	MOV.D 18(A1),A7 ; Set new size
+	;MOV.D A7,A4
+	;SRL.D  A7,9
+	;MOV.D 10(A1),A7
+	;MOV.D A6,A7
+	;JMP	WR4
 WR2:  MOV.D	 A7,A4    ; FILEPOS
+	MOV.D  A6,10(A1) 
 	SRL.D  A7,9
 	CMP.D	 A7,A6
 	JNZ	WR3	   ; is filepos in current buffer
@@ -2707,7 +2810,7 @@ WR4:	MOV.D A7,A4
 	MOV.B A0,(A1)
 	BSET	A0,0
 	MOV.B (A1),A0 ; Mark buffer dirty
-	MOV.D  A4,14(A1) ; FILEPOS
+	MOV.D  A7,14(A1) ; FILEPOS
 	ADDI	A7,1
 	MOV.D 14(A1),A7 ; advance file pointer
 	MOVI	A0,0
@@ -2723,6 +2826,9 @@ WR3:  PUSHI A1
 	POPI	A4
 	POPI	A3
 	POPI	A1
+	MOV.D	 A7,14(A1)
+	SRL.D  A7,9
+	MOV.D  10(A1),A7
 	JMP	WR4
 WREXIT:
 	POPI	A7
@@ -2734,6 +2840,7 @@ WREXIT:
 
 
 OPENWR:	PUSHI A4
+		PUSHXI
 		CMPI	A0,0
 		JZ    OWR1
 		MOVI  A0,4 ; delete if exitsts
@@ -2759,6 +2866,7 @@ OWR1:		MOV.B 1(A6),A7  ; type
             MOV.D 10(A6),A0
 		;IJSR	FINDFN
 		MOV.D	A0,A6
+		POPXI
 		POPI  A4
 		JMP	OFEXIT
 
@@ -2766,6 +2874,7 @@ OWR1:		MOV.B 1(A6),A7  ; type
 OPENAP:	CMPI	A0,0
 		JZ	OFEXER
 		PUSHI A4
+		PUSHXI
 		MOV.D	6(A6),A0  ; First Cluster
 		MOV.B 1(A6),A7  ; type
 		MOV.B	(A6),128  ; open 
@@ -2791,6 +2900,7 @@ OA1:		; bring the last data page in buffer
 		IJSR   FILLBUF ;fill at A3 with the containing A1th of a file starting at A4
 OAEX:		MOV.D  A0,A6
             MOV.D  A1,2(A6)
+		POPXI
 		POPI	A4
 		JMP	OFEXIT
 
@@ -2799,6 +2909,7 @@ OPENFILE:	PUSHI	A2
 		PUSHI	A5
 		PUSHI	A6
 		PUSHI	A7
+		PUSHXI
 		MOV.D A6,FTAB
 		MOV	A0,MAXFILES
 OF1:		CMP.B	(A6),0
@@ -2823,7 +2934,8 @@ OFEXIT:	ADD.D	A0,22
 		SETX 11
 		MTOM.B A0,A4
 		SUB.D A0,22
-OFEXER:	POPI	A7
+OFEXER:	POPXI
+		POPI	A7
 		POPI	A6
 		POPI	A5
 		POPI	A2
