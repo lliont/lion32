@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.0125" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
+<grid distance="0.025" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="16" name="Bottom" color="1" fill="1" visible="no" active="no"/>
@@ -13087,6 +13087,7 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <part name="C21" library="rcl" deviceset="C-EU" device="050-025X075" value="4.7uf"/>
 <part name="C22" library="rcl" deviceset="C-EU" device="050-025X075" value="4.7uf"/>
 <part name="R29" library="SmartPrj" deviceset="R-EU_" device="0204/2V"/>
+<part name="R30" library="SmartPrj" deviceset="R-EU_" device="0204/7" value="100K"/>
 </parts>
 <sheets>
 <sheet>
@@ -13376,6 +13377,7 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <attribute name="VALUE" x="175.514" y="124.206" size="1.778" layer="96"/>
 </instance>
 <instance part="R29" gate="G$1" x="185.1025" y="127"/>
+<instance part="R30" gate="G$1" x="132.08" y="171.45" rot="R270"/>
 </instances>
 <busses>
 </busses>
@@ -14768,7 +14770,8 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <pinref part="U$1" gate="A" pin="-IN"/>
 <wire x1="137.795" y1="176.53" x2="135.255" y2="176.53" width="0.1524" layer="91"/>
 <pinref part="R19" gate="G$1" pin="1"/>
-<wire x1="135.255" y1="176.53" x2="129.8575" y2="176.53" width="0.1524" layer="91"/>
+<wire x1="135.255" y1="176.53" x2="132.08" y2="176.53" width="0.1524" layer="91"/>
+<wire x1="132.08" y1="176.53" x2="129.8575" y2="176.53" width="0.1524" layer="91"/>
 <wire x1="139.065" y1="170.815" x2="135.255" y2="170.815" width="0.1524" layer="91"/>
 <wire x1="135.255" y1="170.815" x2="135.255" y2="176.53" width="0.1524" layer="91"/>
 <junction x="129.8575" y="176.53"/>
@@ -14776,6 +14779,8 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <junction x="129.8575" y="179.705"/>
 <junction x="129.8575" y="175.26"/>
 <label x="130.81" y="184.15" size="1.778" layer="95"/>
+<pinref part="R30" gate="G$1" pin="1"/>
+<junction x="132.08" y="176.53"/>
 </segment>
 <segment>
 <pinref part="C21" gate="G$1" pin="1"/>
@@ -15026,8 +15031,9 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <label x="134.3025" y="147.955" size="1.778" layer="95"/>
 <pinref part="R26" gate="G$1" pin="1"/>
 <wire x1="146.685" y1="151.13" x2="121.92" y2="151.13" width="0.1524" layer="91"/>
-<wire x1="121.92" y1="151.13" x2="121.92" y2="163.83" width="0.1524" layer="91"/>
+<wire x1="121.92" y1="151.13" x2="121.92" y2="160.655" width="0.1524" layer="91"/>
 <pinref part="C11" gate="G$1" pin="2"/>
+<wire x1="121.92" y1="160.655" x2="121.92" y2="163.83" width="0.1524" layer="91"/>
 <wire x1="164.465" y1="166.6875" x2="164.465" y2="158.4325" width="0.1524" layer="91"/>
 <wire x1="164.465" y1="158.4325" x2="164.465" y2="153.3525" width="0.1524" layer="91"/>
 <wire x1="164.465" y1="153.3525" x2="153.035" y2="153.3525" width="0.1524" layer="91"/>
@@ -15041,6 +15047,11 @@ Source: http://us.st.com/stonline/products/literature/ds/7995.pdf</description>
 <wire x1="207.645" y1="158.4325" x2="207.645" y2="160.02" width="0.1524" layer="91"/>
 <pinref part="U$1" gate="P" pin="V-"/>
 <junction x="191.77" y="158.4325"/>
+<pinref part="R30" gate="G$1" pin="2"/>
+<wire x1="132.08" y1="166.37" x2="119.38" y2="166.37" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="166.37" x2="119.38" y2="160.655" width="0.1524" layer="91"/>
+<wire x1="119.38" y1="160.655" x2="121.92" y2="160.655" width="0.1524" layer="91"/>
+<junction x="121.92" y="160.655"/>
 </segment>
 <segment>
 <pinref part="JP1" gate="A" pin="1"/>
