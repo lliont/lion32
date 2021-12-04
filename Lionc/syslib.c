@@ -10,7 +10,7 @@ Set_sprite(s,buf,en,x,y) int s,buf,en,x,y;
 	IOout(16384+bank*4096+6+256*buf+ss*8,en); 
 }
 
-Dissable_sprite(s)  int s;
+Disable_sprite(s)  int s;
 {
 	int bank,ss;
 	bank=s/14; ss=s%14;
@@ -18,13 +18,21 @@ Dissable_sprite(s)  int s;
 	IOout(16384+bank*4096+6+ss*8,0);
 }
 	
-Set_sprite_data(s,buf,d,frame) int s,buf,frame; char d[]; 
+Set_sprite_data(s,sbuf,data,frame) int s,sbuf,frame; char data[]; 
 {
 	int bank,ss,j,adr;
-	bank=s/14; ss=s%14; adr=16896+bank*4096+1792*buf+ss*128;
+	bank=s/14; ss=s%14; adr=16896+bank*4096+1792*sbuf+ss*128;
 	for (j=0; j<128; j++)  {
-			IOoutb(adr+j,d[j+frame*128]);
+			IOoutb(adr+j,data[j+frame*128]);
 	}
+}
+
+Sprite_buffer (int b)
+{
+ #asm
+ MOV.D A0,8(A6)
+ OUT 20,A0
+ #endasm
 }
 
 Sound(chan,freq,dur) int freq,dur,chan;
@@ -45,6 +53,14 @@ Sound(chan,freq,dur) int freq,dur,chan;
  SLL.D A4,1
  ADDI A4,8
  OUT A4,A1
+ #endasm
+}
+
+Mode (m) int m;
+{
+ #asm
+ MOV.D A0,8(A6)
+ OUT 24,A0
  #endasm
 }
 
