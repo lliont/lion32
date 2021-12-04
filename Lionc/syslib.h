@@ -10,3 +10,4 @@
 #define PLOTM 0x484E
 #define CIRCX 0x484A
 #define CIRCY 0x484C
+#define SPRbase 16384
