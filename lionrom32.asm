@@ -1863,11 +1863,17 @@ PUTC:
 		AND.D		A1,$000000FF  
 		IN		A0,24
 		CMPI		A0,1   ;(VMODE),1
-		JZ		PUTC1             
-		SUB.B		A1,32    
+		JZ		PUTC1  
+		CMP.B		A1,127
+		JA          P9C
+           	SUB.B		A1,32    
 		MULU		A1,8
 		ADD.D		A1,CTABLE2
-		MOV.D		A4,A1       ; character table address
+		JMP		P10C
+P9C:		SUB.B       A1,128
+		MULU		A1,8
+		ADD.D		A1,CTABLE3		
+P10C:		MOV.D		A4,A1      ; character table address
 		MOV.B		A0,A2
 		MULU		A0,XDIM
 		MOVI		A1,0
@@ -1888,10 +1894,16 @@ PUTC1:       ; VMODE1 PRINT Character in A1 at A2 (XY)
 		PUSHI		A5
 		PUSHI		A3
 		PUSHI		A2
+		CMP.B		A1,127
+		JA          P7C		
 		SUB.B		A1,32    
 		MULU		A1,6
 		ADD.D		A1,CTABLE
-		MOV.D		A4,A1       ; character table address
+		JMP		P8C
+P7C:		SUB.B       A1,128
+		MULU		A1,6
+		ADD.D		A1,CTABLE3
+P8C:		MOV.D		A4,A1       ; character table address
 		MOV.B		A0,A2
 		MULU		A0,2560  ;XDIM/2 * 8
 		MOVI		A1,0
@@ -3067,8 +3079,8 @@ C36_37	DB	58,42,127,42,46,0,34,4,8,16,34,0
 C38_39      DB    20,62,20,62,20,0,96,0,0,0,0,0
 C40_41	DB	0,28,34,0,0,0,0,34,28,0,0,0
 C42_43	DB	168,112,32,112,168,0,8,8,62,8,8,0
-C44_45	DB	3,0,0,0,0,0,8,8,8,8,8,0
-C46_47	DB	2,0,0,0,0,0,0,6,8,48,0,0
+C44_45	DB	0,3,6,0,0,0,8,8,8,8,8,0
+C46_47	DB	0,0,2,2,0,0,0,6,8,48,0,0
 C48_49	DB	28,38,42,50,28,0,0,18,62,2,0,0
 C50_51	DB	38,42,42,42,18,0,34,42,42,42,54,0
 C52_53	DB	60,4,14,4,4,0,58,42,42,42,36,0
@@ -3174,7 +3186,9 @@ FILEPOS	DS	4  ; file position
 FILESIZE    DS	4  ; file size
 FFNAME      DS	12 ; NAME
 RESTFT      DS    374
-
+FTABEND:
+CTABLE3     DS    =128*8   ; for caracters >127
+CTAB3END:
 ORG $5000
 START:	
 
