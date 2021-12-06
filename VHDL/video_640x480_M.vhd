@@ -495,7 +495,7 @@ begin
 				when 2 => SLData(0):=SPQ(7 downto 4);
 				when others => SLData(0):=SPQ(3 downto 0);
 				end case;
-				if blvec<14 and SLData(0)/="1111" then 
+				if blvec<14  then --and SLData(0)/="1111"
 					BRGB:=SLData(0); det:='1';
 				else
 					det:='0'; BRGB:="0000";
@@ -518,25 +518,25 @@ begin
 			if (lines>=l1 and lines<l2 and (pixel<(spno*4+4))) then
 				case pm4 is
 				when 0 =>
-					if SPQ(15 downto 12)="1111" then transp(pd4)(0):='1'; else transp(pd4)(0):='0'; end if;
-					if SPQ(11 downto 8)="1111" then transp(pd4)(1):='1'; else transp(pd4)(1):='0'; end if;
-					if SPQ(7 downto 4)="1111" then transp(pd4)(2):='1'; else transp(pd4)(2):='0'; end if;
-					if SPQ(3 downto 0)="1111" then transp(pd4)(3):='1'; else transp(pd4)(3):='0'; end if;
+				   transp(pd4)(0):=SPQ(15) and SPQ(14) and SPQ(13) and SPQ(12);
+					transp(pd4)(1):=SPQ(11) and SPQ(10) and SPQ(9) and SPQ(8);
+					transp(pd4)(2):=SPQ(7) and SPQ(6) and SPQ(5) and SPQ(4);
+					transp(pd4)(3):=SPQ(3) and SPQ(2) and SPQ(1) and SPQ(0);
 				when 1 =>
-					if SPQ(15 downto 12)="1111" then transp(pd4)(4):='1'; else transp(pd4)(4):='0'; end if;
-					if SPQ(11 downto 8)="1111" then transp(pd4)(5):='1'; else transp(pd4)(5):='0'; end if;
-					if SPQ(7 downto 4)="1111" then transp(pd4)(6):='1'; else transp(pd4)(6):='0'; end if;
-					if SPQ(3 downto 0)="1111" then transp(pd4)(7):='1'; else transp(pd4)(7):='0'; end if;
+					transp(pd4)(4):=SPQ(15) and SPQ(14) and SPQ(13) and SPQ(12);
+					transp(pd4)(5):=SPQ(11) and SPQ(10) and SPQ(9) and SPQ(8);
+					transp(pd4)(6):=SPQ(7) and SPQ(6) and SPQ(5) and SPQ(4);
+					transp(pd4)(7):=SPQ(3) and SPQ(2) and SPQ(1) and SPQ(0);
 				when 2 =>
-					if SPQ(15 downto 12)="1111" then transp(pd4)(8):='1'; else transp(pd4)(8):='0'; end if;
-					if SPQ(11 downto 8)="1111" then transp(pd4)(9):='1'; else transp(pd4)(9):='0'; end if;
-					if SPQ(7 downto 4)="1111" then transp(pd4)(10):='1'; else transp(pd4)(10):='0'; end if;
-					if SPQ(3 downto 0)="1111" then transp(pd4)(11):='1'; else transp(pd4)(11):='0'; end if;
+					transp(pd4)(8):=SPQ(15) and SPQ(14) and SPQ(13) and SPQ(12);
+					transp(pd4)(9):=SPQ(11) and SPQ(10) and SPQ(9) and SPQ(8);
+					transp(pd4)(10):=SPQ(7) and SPQ(6) and SPQ(5) and SPQ(4);
+					transp(pd4)(11):=SPQ(3) and SPQ(2) and SPQ(1) and SPQ(0);
 				when others =>
-					if SPQ(15 downto 12)="1111" then transp(pd4)(12):='1'; else transp(pd4)(12):='0'; end if;
-					if SPQ(11 downto 8)="1111" then transp(pd4)(13):='1'; else transp(pd4)(13):='0'; end if;
-					if SPQ(7 downto 4)="1111" then transp(pd4)(14):='1'; else transp(pd4)(14):='0'; end if;
-					if SPQ(3 downto 0)="1111" then transp(pd4)(15):='1'; else transp(pd4)(15):='0'; end if;
+					transp(pd4)(12):=SPQ(15) and SPQ(14) and SPQ(13) and SPQ(12);
+					transp(pd4)(13):=SPQ(11) and SPQ(10) and SPQ(9) and SPQ(8);
+					transp(pd4)(14):=SPQ(7) and SPQ(6) and SPQ(5) and SPQ(4);
+					transp(pd4)(15):=SPQ(3) and SPQ(2) and SPQ(1) and SPQ(0);
 				end case;
 			end if;
 			blvec:=15; 
@@ -715,17 +715,17 @@ entity lfsr_II is
 end entity;
 
 architecture rtl of lfsr_II is
-    signal count: std_logic_vector (19 downto 0);
+    signal count: std_logic_vector (24 downto 0);
     signal linear_feedback,temp: std_logic:='0';
 begin
-    linear_feedback <= not(count(19) xor count(2));
+    linear_feedback <= not(count(24) xor count(21));
 	 process (clk, reset) 
 	 begin
 		  if (reset = '1') then
 				count <= (others=>'0'); --cnt:=0;
 		  elsif (rising_edge(clk)) then
-				count <= ( count(18 downto 0) & linear_feedback);
-				temp<=count(19);
+				temp<=count(24);
+				count <= ( count(23 downto 0) & linear_feedback);
 		  end if;
 	 end process;
 	 cout <=temp; -- count(19) when vol > to_integer(unsigned(count(7 downto 0)));
