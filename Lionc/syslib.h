@@ -11,3 +11,7 @@
 #define CIRCX 0x484A
 #define CIRCY 0x484C
 #define SPRbase 16384
+
+#asm
+PLOTM EQU	$484E
+#endasm

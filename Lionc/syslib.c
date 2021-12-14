@@ -6,7 +6,7 @@ Set_sprite(s,buf,en,x,y) int s,buf,en,x,y;
 	int bank,ss;
 	bank=s/14; ss=s % 14;
 	IOout(16384+bank*4096+256*buf+ss*8,x);   
-	IOout(16384+bank*4096+2+256*buf+ss*8,y+8); 
+	IOout(16384+bank*4096+2+256*buf+ss*8,y); 
 	IOout(16384+bank*4096+6+256*buf+ss*8,en); 
 }
 
@@ -32,6 +32,80 @@ Sprite_buffer (int b)
  #asm
  MOV.D A0,8(A6)
  OUT 20,A0
+ #endasm
+}
+
+Vscrollc( int x, int lx, int y, int ly, int sl)
+{
+ #asm
+ MOV.D A4,24(A6)
+ MOV.D A3,20(A6)
+ MOV.D A2,16(A6)
+ MOV.D A1,12(A6)
+ MOV.D A0,8(A6)
+ OUT 96778,A4   
+ OUT 96776,A3
+ OUT 96774,A2 
+ OUT 96772,A1   
+ OUT 96770,A0   
+ MOVI A0,15  
+ INT  4
+ #endasm
+}
+
+Hscrollc( int x, int lx, int y, int ly, int sp)
+{
+ #asm
+ MOV.D A4,24(A6)
+ MOV.D A3,20(A6)
+ MOV.D A2,16(A6)
+ MOV.D A1,12(A6)
+ MOV.D A0,8(A6)
+ OUT 96778,A4   
+ OUT 96776,A3
+ OUT 96774,A2 
+ OUT 96772,A1   
+ OUT 96770,A0   
+ MOVI A0,15  
+ INT  5
+ #endasm
+}
+
+Vscrollf( int x, int lx, int y, int ly, int sl, int adr)
+{
+ #asm
+ MOV.D A7,28(A6)
+ MOV.D A4,24(A6)
+ MOV.D A3,20(A6)
+ MOV.D A2,16(A6)
+ MOV.D A1,12(A6)
+ MOV.D A0,8(A6)
+ OUT 96778,A4   
+ OUT 96776,A3
+ OUT 96774,A2 
+ OUT 96772,A1   
+ OUT 96770,A0   
+ MOV.D A0,18  
+ INT  5
+ #endasm
+}
+
+Hscrollf( int x, int lx, int y, int ly, int sp, int adr)
+{
+ #asm
+ MOV.D A7,28(A6)
+ MOV.D A4,24(A6)
+ MOV.D A3,20(A6)
+ MOV.D A2,16(A6)
+ MOV.D A1,12(A6)
+ MOV.D A0,8(A6)
+ OUT 96778,A4   
+ OUT 96776,A3
+ OUT 96774,A2 
+ OUT 96772,A1   
+ OUT 96770,A0   
+ MOV.D A0,19  
+ INT  5
  #endasm
 }
 
@@ -79,13 +153,35 @@ Isplaying (c) int c;
 Plot (x,y,mode) int y,x,mode;
 {
   #asm
-  PLOTM EQU	$484E
   MOV.D A1,16(A6)
   MOV.D A2,12(A6)
   MOV.D A3,8(A6)
   MOV.B (PLOTM),A3
   MOVI A0,2
   INT 4
+  #endasm
+}
+
+Line (x,y,x2,y2) int y,x,x2,y2;
+{
+  #asm
+  MOV.D A4,16(A6)
+  MOV.D A3,16(A6)
+  MOV.D A2,12(A6)
+  MOV.D A1,8(A6)
+  MOVI A0,14
+  INT 5
+  #endasm
+}
+
+Circle (x,y,r) int y,x,r;
+{
+  #asm
+  MOV.D A3,16(A6)
+  MOV.D A2,12(A6)
+  MOV.D A1,8(A6)
+  MOV.D A0,17
+  INT 5
   #endasm
 }
 

@@ -167,51 +167,52 @@ PHX2:		MOVI	A0,4
 ;--------------------------------------------------
 
 ;  INT4 FUNCTION TABLE  function in a0
-INT4T0	DA		SERIN    ; Serial port in A1  A0(0)=1 
-INT4T1	DA		SEROUT   ; Serial port out A1  
-INT4T2	DA		PLOT     ; at X=A1,Y=A2 A4=1 set A4=0 clear
-INT4T3	DA		CLRSCR   ; CLEAR SCREEN
-INT4T4	DA		PUTC     ; Print char A1 at x A2.H  y A2.L
-INT4T5	DA		PSTR     ; Print zero & cr terminated string
-INT4T6	DA		SCROLL   ; Scrolls screen 1 char (8 points) up
-INT4T7	DA		SKEYBIN  ; Serial Keyboard port in A1 A0(2)=1
-INT4T8	DA		MULT     ; Multiplcation A1*A2 res in A2A1, a0<>0 overflow 
-INT4T9	DA		DIV      ; 16bit  Div A2 by A1 res in A1,A0
-INT4T10	DA		KEYB     ; converts to ascii the codes from serial keyboard
-INT4T11	DA		SPI_INIT ; initialize spi sd card
-INT4T12	DA		SPIS     ; spi send/rec byt in A1 mode A2 1=CS low 3=CS h res a0
-INT4T13	DA		READSEC  ; read in buffer at A2, n in A1
-INT4T14	DA		WRITESEC ; WRITE BUFFER at A2 TO A1 BLOCK
-INT4T15	DA		VSCROLL  ; roll
-INT4T16	DA		OPENFILE ; open A1=type A4=ptr to fname, A0=ID success A0=0 failure
-INT4T17     DA		CLOSEFILE ; A1=file handle
-INT4T18     DA          FREAD    ; A1=File handle  A2=number of bytes A3=pointer to buffer
-INT4T19     DA		FSEEK    ; A1=file handle  A2=new pos
-INT4T20     DA		FGETPOS  ; A1=file handle, A0=file pos
-INT4T21     DA		FGETSZ   ; A1=file handle, A0=file size
-INT4T22	DA		FWRITE   ; A1=file handle, A2=byte
+INT4T0	DA	SERIN    ; Serial port in A1  A0(0)=1 
+INT4T1	DA	SEROUT   ; Serial port out A1  
+INT4T2	DA	PLOT     ; at X=A1,Y=A2 A4=1 set A4=0 clear
+INT4T3	DA	CLRSCR   ; CLEAR SCREEN
+INT4T4	DA	PUTC     ; Print char A1 at x A2.H  y A2.L
+INT4T5	DA	PSTR     ; Print zero & cr terminated string
+INT4T6	DA	SCROLL   ; Scrolls screen 1 char (8 points) up
+INT4T7	DA	SKEYBIN  ; Serial Keyboard port in A1 A0(2)=1
+INT4T8	DA	MULT     ; Multiplcation A1*A2 res in A2A1, a0<>0 overflow 
+INT4T9	DA	DIV      ; 16bit  Div A2 by A1 res in A1,A0
+INT4T10	DA	KEYB     ; converts to ascii the codes from serial keyboard
+INT4T11	DA	SPI_INIT ; initialize spi sd card
+INT4T12	DA	SPIS     ; spi send/rec byt in A1 mode A2 1=CS low 3=CS h res a0
+INT4T13	DA	READSEC  ; read in buffer at A2, n in A1
+INT4T14	DA	WRITESEC ; WRITE BUFFER at A2 TO A1 BLOCK
+INT4T15	DA	VSCROLL  ; loop horizontal scroll
+INT4T16	DA	OPENFILE ; open A1=type A4=ptr to fname, A0=ID success A0=0 failure
+INT4T17     DA	CLOSEFILE ; A1=file handle
+INT4T18     DA    FREAD    ; A1=File handle  A2=number of bytes A3=pointer to buffer
+INT4T19     DA	FSEEK    ; A1=file handle  A2=new pos
+INT4T20     DA	FGETPOS  ; A1=file handle, A0=file pos
+INT4T21     DA	FGETSZ   ; A1=file handle, A0=file size
+INT4T22	DA	FWRITE   ; A1=file handle, A2=byte
 
 
 ;  INT5 FUNCTION TABLE  function in a0
-INT5T0	DA		INTEXIT   ; Ex fixed point multiply A1*A2
-INT5T1	DA		INTEXIT   ; Ex fixed point divide A2.(FRAC2)/A1.(FRAC1)
-INT5T2	DA		FILELD   ; Load file A4 points to filename, at A3
-INT5T3	DA		VMOUNT   ; Load First Volume, return A0=fat root 1st cluster
-INT5T4	DA		FILEDEL  ; Delete file A4 points to filename
-INT5T5	DA		FILESAV  ; Save memory to file A4 filename, a6 address, a7 size
-INT5T6	DA		UDIV     ; Unsigned 32bit  Div A2 by A1 res in A1,A0
-INT5T7      DA		MEMALOC  ; Reserve mem above and adjust FMEMORG A1=bytes  A0=new FMO
-INT5T8      DA		MEMFREE  ; free memory A1=bytes A2=base mem
-INT5T9      DA		FLMUL    ; float mult A1A2*A3A4 res A1A2 
-INT5T10     DA		FLDIV    ; float div A1A2/A3A4 res A1A2
-INT5T11     DA		FLADD    ; float add A1A2+A3A4 res A1A2 
-INT5T12     DA		FCMP     ; float cmp  A1A2,A3A4 res A0 
-INT5T13     DA		LDSCR    ; Load Screen A4 fname @A3 
-INT5T14     DA          LINEXY   ; plot a line a1,a2 to a3,a4
-INT5T15	DA		HSCROLL  ; roll
-INT5T16	DA		FINDF    ;  A4 ptr to filename, A0->cluster relative to (FSTCLST)
-INT5T17	DA		CIRC     ; Circle A1,A2,A3                                   
-
+INT5T0	DA	INTEXIT   ; Ex fixed point multiply A1*A2
+INT5T1	DA	INTEXIT   ; Ex fixed point divide A2.(FRAC2)/A1.(FRAC1)
+INT5T2	DA	FILELD   ; Load file A4 points to filename, at A3
+INT5T3	DA	VMOUNT   ; Load First Volume, return A0=fat root 1st cluster
+INT5T4	DA	FILEDEL  ; Delete file A4 points to filename
+INT5T5	DA	FILESAV  ; Save memory to file A4 filename, a6 address, a7 size
+INT5T6	DA	UDIV     ; Unsigned 32bit  Div A2 by A1 res in A1,A0
+INT5T7      DA	MEMALOC  ; Reserve mem above and adjust FMEMORG A1=bytes  A0=new FMO
+INT5T8      DA	MEMFREE  ; free memory A1=bytes A2=base mem
+INT5T9      DA	FLMUL    ; float mult A1A2*A3A4 res A1A2 
+INT5T10     DA	FLDIV    ; float div A1A2/A3A4 res A1A2
+INT5T11     DA	FLADD    ; float add A1A2+A3A4 res A1A2 
+INT5T12     DA	FCMP     ; float cmp  A1A2,A3A4 res A0 
+INT5T13     DA	LDSCR    ; Load Screen A4 fname @A3 
+INT5T14     DA    LINEXY   ; plot a line a1,a2 to a3,a4
+INT5T15	DA	HSCROLL  ; loop horizontal scroll
+INT5T16	DA	FINDF    ;  A4 ptr to filename, A0->cluster relative to (FSTCLST)
+INT5T17	DA	CIRC     ; Circle A1,A2,A3     
+INT5T18     DA	VSCROLL2 ; vertical scroll with data feed	                              
+INT5T19     DA	HSCROLL2 ; horizontal scroll with data
 
 ;Hardware interrupt
 ;HINT:		;ADD		(COUNTER),1
@@ -265,12 +266,28 @@ MFEXIT:	POPI	A3
 
 ; General Horizontal Scroll INT5 A0=15 for MODE 1
 ; Block at 64780 
+; +0 line
+; +2 lenght lines
+; +4 pixel
+; +6 length pixels
+; +8 pixels to scroll
+; Buffer at 96790 to 98303 (1514 bytes) up to 7 pixels full screen 
 ;---------------------------------------------------
 
-HSCROLL:	
+HSCROLL2: 	PUSHI	A7
 		IN	A0,24
 		CMPI	A0,1    
 		JZ	HSCROLL1
+		POPI	A7
+		RETI
+
+
+HSCROLL:	PUSHI A7
+		IN	A0,24
+		CMPI	A0,1 
+		MOV.D	A7,SCRLBUF
+		JZ	HSCROLL1
+		POPI	A7
 		RETI
 
 HSCROLL1:	PUSHXI
@@ -301,7 +318,7 @@ HSCROLL1:	PUSHXI
 		IN	A2,2+HSBLOCK   ; lines
 		MOV.D	A3,A5
 		SUBI	A3,1
-		SRSET 4
+		SRSET 4    ; set decrease to direction bit
 HSCRL1:	SETX 	A3
 		MOV.D	A0,A1
             ITOI.B  A4,A0
@@ -329,7 +346,7 @@ HSCRL3:	SETX 	A3
 		SUB.D	A1,A3
 		MOV.D	A3,A5
 		ADD.D	A1,A3
-		MOV.D	A4,SCRLBUF
+		MOV.D	A4,A7  ;SCRLBUF
 		IN	A2,2+HSBLOCK   ; lines
 		SUBI	A3,1
 		PUSHI	A1 ; store fill pos
@@ -381,7 +398,7 @@ HSCRL9:	SETX 	A3
 		ADD.D	A1,A3
 		MOV.D	A3,A5
 		SUB.D	A1,A3
-		MOV.D	A4,SCRLBUF
+		MOV.D	A4,A7 ;SCRLBUF
 		IN	A2,2+HSBLOCK   ; lines
 		PUSHI	A1
 		SUBI	A3,1
@@ -399,17 +416,33 @@ HS1EX:	POPI	A5
 		POPI	A2
 		POPI	A1
 		POPXI
+		POPI	A7
 		RETI
 
 ;----------------------------------------------
 
 ;General Vertical Scroll INT4 A0=15 MODE 1
-; Block at 64770
+; Block starts at 64770
+; +0 line
+; +2 lenght lines
+; +4 point
+; +6 length points
+; +8 lines to scroll
+; Buffer at 96790 to 98303 (1514 bytes) up to 4 lines full screen 
 ;----------------------------------------------
-VSCROLL:	
-		IN		A0,24
-		CMPI		A0,1 
-		JZ		VSCROLL1
+VSCROLL2:	PUSHI	A7
+		IN	A0,24
+		CMPI	A0,1 
+		JZ	VSCROLL1
+		POPI  A7
+		RETI
+
+VSCROLL:	PUSHI	A7
+		IN	A0,24
+		CMPI	A0,1 
+		MOV.D	A7,SCRLBUF
+		JZ	VSCROLL1
+		POPI	A7
 		RETI
 
 VSCROLL1:	PUSHXI
@@ -462,7 +495,7 @@ VSCRL2:	SETX	A3
 		ADD.D	A4,320
 		SUBI	A2,1
 		JNZ	VSCRL2
-		MOV.D	A4,SCRLBUF
+		MOV.D	A4,A7 ;SCRLBUF
 		MOV.D	A2,A5
 		IN	A5,6+VSBLOCK    ; length pix
 		PUSHI	A1
@@ -512,7 +545,7 @@ VSCRL5:	SETX	A3
 		SUB.D	A4,320
 		SUBI	A2,1
 		JNZ	VSCRL5
-		MOV.D	A4,SCRLBUF
+		MOV.D	A4,A7 ;SCRLBUF
 		MOV.D	A2,A5
 		IN	A5,6+VSBLOCK
 		PUSHI A1  
@@ -531,6 +564,7 @@ VS1EX:	POPI	A6
 		POPI	A2
 		POPI	A1
 		POPXI
+		POPI	A7
 		RETI
 ;----------------------------------------
 
@@ -1864,8 +1898,8 @@ PUTC:
 		IN		A0,24
 		CMPI		A0,1   ;(VMODE),1
 		JZ		PUTC1  
-		CMP.B		A1,127
-		JA          P9C
+		BTST		A1,7
+		JNZ         P9C
            	SUB.B		A1,32    
 		MULU		A1,8
 		ADD.D		A1,CTABLE2
@@ -1894,8 +1928,8 @@ PUTC1:       ; VMODE1 PRINT Character in A1 at A2 (XY)
 		PUSHI		A5
 		PUSHI		A3
 		PUSHI		A2
-		CMP.B		A1,127
-		JA          P7C		
+		BTST		A1,7
+		JNZ         P7C		
 		SUB.B		A1,32    
 		MULU		A1,6
 		ADD.D		A1,CTABLE
