@@ -15,15 +15,16 @@ entity UART is
 		data_ready : OUT std_logic:='0';
 		ready : OUT std_logic:='1';
 		data_in : IN std_logic_vector (7 downto 0);
-		data_out :OUT std_logic_vector (7 downto 0)
+		data_out :OUT std_logic_vector (7 downto 0);
+		speed: IN natural range 0 to 32768:=1301
 	);
 end UART;
 
 Architecture Behavior of UART is
 
-constant rblen:natural:=8;
+constant rblen:natural:=12;
 constant tblen:natural:=8; 
-constant divider:natural :=2603/2; -- 19200*2       650  25MHz/38400   1302 ; -- 50MHz to 34800
+constant divider:natural :=2603/2; -- 19200*2       650  25MHz/38400   1302 ; -- 50MHz to 34800 434=115200
 type FIFO_t is array (0 to tblen-1) of std_logic_vector(9 downto 2);
 type FIFO_r is array (0 to rblen-1) of std_logic_vector(9 downto 2);
 Signal tFIFO: FIFO_t;
@@ -32,7 +33,7 @@ Signal tFIFO: FIFO_t;
 Signal rFIFO: FIFO_r;
 	attribute ramstyle of rFIFO : signal is "logic";
 Signal inb,outb: std_logic_vector(9 downto 2);
-Signal rcounter,tcounter :natural range 0 to 4095:=1;
+Signal rcounter,tcounter :natural range 0 to 32768:=1;
 signal dr: boolean:=false;
 signal rd:boolean :=true;
 signal rptr1, rptr2: natural range 0 to rblen := 0; 
@@ -55,9 +56,9 @@ begin
 			rcounter<=rcounter+1; 
 			tcounter<=tcounter+1;
 			rx1<=Rx; rx0<=rx1;
-			if rcounter=divider or (rstate=0 and rx1='0' and rx0='0' and Rx='0') then	
+			if rcounter=speed or (rstate=0 and rx1='0' and rx0='0' and Rx='0') then	
 				if rstate=0 and Rx='0' and rx1='0' and rx0='0' then
-					rcounter<=divider/2;	
+					rcounter<=speed/2;	
 					rstate<=1; 
 				elsif rstate=1 then
 					rstate<=rstate+1;
@@ -86,7 +87,7 @@ begin
 			end if;
 			
 			
-			if tcounter=divider then
+			if tcounter=speed then
 				
 				if tstate=0 and ( tptr1/=tptr2 or rd=false) then
 					tcounter<=1;

@@ -226,7 +226,7 @@ end;
 
 
 -----------------------------------------------------------------------------
--- Multicolor Sprites for Lion Computer 
+-- Multicolor Sprites for Lion Computer (Old)
 -- Theodoulos Liontakis (C) 2018
 
 Library ieee;
@@ -415,7 +415,7 @@ end process;
 end;
 
 -----------------------------------------------------------------------------
--- Multicolor Sprites for Lion Computer 
+-- Multicolor Sprites for Lion Computer (Newer)
 -- Theodoulos Liontakis (C) 2021
 
 Library ieee;
@@ -466,7 +466,6 @@ Signal vidc: boolean:=false;
 Signal SX,SY: sprite_dim;
 Signal SEN:sprite_enable;
 Signal pixel : natural range 0 to 1023;
-shared variable sldata: sprite_line_data; 
 
 begin
 vidc<=not vidc when rising_edge(vclk);
@@ -481,6 +480,7 @@ variable p16,datab: natural range 0 to 2047;
 variable pixi, lin, pm4,pd4: natural range 0 to 1023;
 variable blvec:natural range 0 to 15;
 variable transp: sprite_transp_data;
+variable sldata: std_logic_vector(3 downto 0); -- sprite_line_data; 
 
 begin
 	if  rising_edge(sclk) then
@@ -490,17 +490,19 @@ begin
 		elsif  vidc then 
 			if (lines>=l1 and lines<l2 and pixel>=p1 and pixel<p2) then	
 				case d1(blvec) mod 4 is
-				when 0 => SLData(0):=SPQ(15 downto 12);
-				when 1 => SLData(0):=SPQ(11 downto 8);
-				when 2 => SLData(0):=SPQ(7 downto 4);
-				when others => SLData(0):=SPQ(3 downto 0);
+				when 0 => SLData:=SPQ(15 downto 12);
+				when 1 => SLData:=SPQ(11 downto 8);
+				when 2 => SLData:=SPQ(7 downto 4);
+				when others => SLData:=SPQ(3 downto 0);
 				end case;
 				if blvec<14  then --and SLData(0)/="1111"
-					BRGB:=SLData(0); det:='1';
+					det:='1';
+					BRI<=SLData(3); R<=SLData(2); G<=SLData(1); B<=SLData(0); 
 				else
-					det:='0'; BRGB:="0000";
+					det:='0'; --BRGB:="0000";
+					BRI<='0'; R<='0'; G<='0'; B<='0'; 
 				end if;
-				BRI<=BRGB(3); R<=BRGB(2); G<=BRGB(1); B<=BRGB(0); 
+				--BRI<=BRGB(3); R<=BRGB(2); G<=BRGB(1); B<=BRGB(0); 
 			else  
 				det:='0';
 			end if;
@@ -671,7 +673,8 @@ variable f,f2:std_logic_vector(15 downto 0);
 				c1<="0000000000";
 				c3<=c3+1; c2<=c2+1; c4<=c4+1; 
 				if dur=0 then
-					temp<='0';	temp2<='0'; c2<=(others => '0'); c3<=0; c4<=(others => '0'); play<='0'; 
+					temp<='0';	temp2<='0'; Audio<='0';
+					c2<=(others => '0'); c3<=0; c4<=(others => '0'); play<='0'; 
 				else 
 
 				if c2=f(12 downto 0) then

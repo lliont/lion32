@@ -176,7 +176,7 @@ INT4T5	DA	PSTR     ; Print zero & cr terminated string
 INT4T6	DA	SCROLL   ; Scrolls screen 1 char (8 points) up
 INT4T7	DA	SKEYBIN  ; Serial Keyboard port in A1 A0(2)=1
 INT4T8	DA	MULT     ; Multiplcation A1*A2 res in A2A1, a0<>0 overflow 
-INT4T9	DA	DIV      ; 16bit  Div A2 by A1 res in A1,A0
+INT4T9	DA	DIV      ; 32bit  Div A2 by A1 res in A1,A0
 INT4T10	DA	KEYB     ; converts to ascii the codes from serial keyboard
 INT4T11	DA	SPI_INIT ; initialize spi sd card
 INT4T12	DA	SPIS     ; spi send/rec byt in A1 mode A2 1=CS low 3=CS h res a0
@@ -213,6 +213,7 @@ INT5T16	DA	FINDF    ;  A4 ptr to filename, A0->cluster relative to (FSTCLST)
 INT5T17	DA	CIRC     ; Circle A1,A2,A3     
 INT5T18     DA	VSCROLL2 ; vertical scroll with data feed	                              
 INT5T19     DA	HSCROLL2 ; horizontal scroll with data
+INT5T20     DA    LASTKEY  ; empty buffer return lastkey in A1
 
 ;Hardware interrupt
 ;HINT:		;ADD		(COUNTER),1
@@ -2136,7 +2137,7 @@ P1L5:		OUT.B		A2,A1
 LINEXY:
 	STI
 	PUSHXI
-	PUSHI 	A1
+	PUSHI A1
 	PUSHI	A2
 	PUSHI	A3
 	PUSHI	A4
@@ -2274,7 +2275,7 @@ CIRX:	POPI	A7
 	RETI
 
 ;--------------------------------------------------------------
-; Multiplcation A1*A2 res in A1,
+; Multiplcation A1*A2 res in A1, exists/left for no reason
 
 MULT:		
 		MUL.D       A1,A2
@@ -2291,18 +2292,15 @@ DIV:
 		RETI	
 DIV0:		PUSHI		A3
 		MOVI		A3,0
-		MOV.D		A0,A1
-		XOR.D		A0,A2
-		JP		DIV1     ; Check result sign
-		MOVI		A3,1
 DIV1:		MOV.D		A0,A2		
 		BTST		A1,31
-		JRZ		2
-		NEG.D		A1
-		BTST		A2,31
 		JRZ		4
+		NEG.D		A1
+		MOVI		A3,1
+		BTST		A2,31
+		JRZ		6
 		NEG.D		A2
-		BSET		A3,1
+		XOR		A3,1
 		CMP.D		A1,A2
 		JLE		DIV4
 		MOVI		A1,0    ;A0=A2   id divider > divident res=0 rem=divident	
@@ -2313,12 +2311,8 @@ DIV4:		PUSHI		A3
 		ALNG		A1,A3
 		XCHG		A3,A1
 		SUB.D		A1,A2
-DIV10:	CMPI		A2,0
-		JZ		DIV9
-		SRL.D		A3,1  ; align back
-		SRL.D		A0,1
-		SUBI		A2,1
-		JMP		DIV10
+		SRL.D		A3,A2  ; align back
+		SRL.D		A0,A2
 DIV9:		MOV.D       A2,A1
 		MOVI		A1,0     ; quotient
 DIV11:	CMP.D		A0,A3  ; compare remainder with divisor
@@ -2330,10 +2324,8 @@ DIV8:		SRL.D		A3,1
 		JP		DIV11 
 DIV14:	POPI		A3
 		BTST		A3,0
-		JRZ		2
+		JZ		DIVE
 		NEG.D		A1
-		BTST		A3,1
-		JRZ		DIVE
 		NEG.D		A0
 DIVE:		POPI		A3
 		RETI
@@ -2358,12 +2350,8 @@ UDIV4:	PUSHI		A3
 		ALNG		A1,A3
 		XCHG		A3,A1
 		SUB.D		A1,A2
-UDIV10:	CMPI		A2,0
-		JZ          UDIV9
-		SRL.D		A3,1
-		SRL.D		A0,1
-		SUBI		A2,1
-		JMP		UDIV10
+		SRL.D		A3,A2
+		SRL.D		A0,A2
 UDIV9:	MOV.D		A2,A1  
 		MOVI		A1,0       ; quotient
 UDIV11:	CMP.D		A0,A3  ; compare remainder with divisor
@@ -2376,7 +2364,6 @@ UDIV8:	SRL.D		A3,1
 		POPI		A3
 		RETI
 
-
 ; -------------------------------------
 SKEYBIN:	
 		IN	A0,6  ;Read key byte if availiable
@@ -2386,6 +2373,15 @@ SKEYBIN:
 		OUT	15,2
 		OUT	15,0
 		RETI
+;---------------------------------------------
+LASTKEY:    MOVI	A1,0 	
+LASTKEY2:	IN	A0,6  ;Read key byte if availiable
+		BTST	A0,2  ;Result in A1, A0(2)=0 if not avail
+		JZ	INTEXIT
+		IN	A1,14
+		OUT	15,2
+		OUT	15,0
+		JMP   LASTKEY2
 ;---------------------------------------
 KEYB:		
 		PUSHXI
@@ -3056,7 +3052,7 @@ KEYASCC	DB    32,48,49,50,51,52,53,54,55,56,57,97,98,99,100,101,102,103,104,105,
 		DB    200,201,202,203
 
 ROMEND:
-; Charcter table Font
+; Charcter table Font MODE 0
 CTABLE2	DB	0,0,0,0,0,0,0,0, 0,96,250,250,96,0,0,0;!
 CC34_35	DB	0,224,224,0,224,224,0,0, 40,254,254,40,254,254,40,0; # "
 CC36_37	DB	36,116,214,214,92,72,0,0, 98,102,12,24,48,102,70,0  ; $ %
@@ -3106,7 +3102,7 @@ CC122_123   DB    50,38,46,58,50,38,0,0, 16,16,124,238,130,130,0,0 ; z {
 CC124_125	DB	0,0,0,238,238,0,0,0,  130,130,238,124,16,16,0,0 ; | }
 CC126_127	DB	64,192,128,192,64,192,128,0, 14,30,50,98,50,30,14,0 ; ~ triangle
 
-
+; MODE 1
 CTABLE	DB	0,0,0,0,0,0,58,0,0,0,0,0
 C34_35	DB	96,0,96,0,0,0,20,62,20,62,20,0
 C36_37	DB	58,42,127,42,46,0,34,4,8,16,34,0
@@ -3225,4 +3221,7 @@ CTABLE3     DS    =128*8   ; for caracters >127
 CTAB3END:
 ORG $5000
 START:	
+
+
+
 

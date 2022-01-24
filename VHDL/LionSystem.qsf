@@ -100,7 +100,7 @@ set_global_assignment -name EDA_OUTPUT_DATA_FORMAT NONE -section_id eda_simulati
 
 # end ENTITY(LionSystem)
 # ----------------------
-set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_global_assignment -name ALLOW_REGISTER_RETIMING ON
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
 set_global_assignment -name PROJECT_IP_REGENERATION_POLICY ALWAYS_REGENERATE_IP
@@ -203,7 +203,7 @@ set_location_assignment PIN_D12 -to SCLK2
 set_location_assignment PIN_B12 -to MOSI2
 set_location_assignment PIN_C11 -to LDAC
 set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 1.275
-set_global_assignment -name OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name OPTIMIZATION_TECHNIQUE BALANCED
 set_global_assignment -name SYNCHRONIZER_IDENTIFICATION AUTO
 set_global_assignment -name OPTIMIZE_IOC_REGISTER_PLACEMENT_FOR_TIMING NORMAL
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
@@ -220,7 +220,7 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KCLK
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KDATA
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST1*
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST2*
-set_location_assignment PIN_V19 -to ADo[19]
+set_location_assignment PIN_AB17 -to ADo[19]
 set_location_assignment PIN_V20 -to ADo[18]
 set_location_assignment PIN_V21 -to ADo[17]
 set_location_assignment PIN_U22 -to ADo[16]

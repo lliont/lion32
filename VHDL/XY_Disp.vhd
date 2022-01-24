@@ -19,7 +19,8 @@ entity XY_Display_MCP4822 is
 		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
-		pperiod: IN natural range 0 to 65535
+		pperiod: IN natural range 0 to 65535;
+		max_addr:natural range 0 to 4095:=4095
 	);
 end XY_Display_MCP4822;
 
@@ -81,7 +82,7 @@ begin
 					y(9 downto 2)<=Q(7 downto 0); 
 					x(9 downto 2)<=Q(15 downto 8);
 				when 4 =>
-					if caddr<4095 then caddr:=caddr+1; else caddr:=0;  end if;
+					if caddr<max_addr then caddr:=caddr+1; else caddr:=0;  end if;
 					if mode='1' or z=0 then cs<='0'; mcnt:=8; cnt:=maxd; end if;
 					cx:=to_integer(signed("0"&x)); cy:=to_integer(signed("0"&y)); 
 					if z=0 or mode='1' then lx:=cx; ly:=cy; end if;
@@ -130,7 +131,7 @@ begin
 				if restart=1 then mcnt:=0; cnt:=0; restart:=0; 
 				elsif restart=2 then mcnt:=7; restart:=0; elsif swait='0' then mcnt:=mcnt+1; end if;
 			else --  PCM ------------------------------------------------------------------------------------------
-			   if (caddr/=4095) and (mode='1') then isplaying<='1'; else isplaying<='0';   end if;
+			   if (caddr/=max_addr) and (mode='1') then isplaying<='1'; else isplaying<='0';   end if;
 				case mcnt2 is
 				when 0 =>
 					swait:='0';  cs<='1';
@@ -140,7 +141,7 @@ begin
 					z<="00000000";
 				when 1 =>
 					if lowbyte='1' or stereo='1' then
-						if caddr<4095 then caddr:=caddr+1;   end if; --else caddr:=0;
+						if caddr<max_addr then caddr:=caddr+1;   end if; --else caddr:=0;
 					end if;
 				when 2 =>
 					cs<='0'; 

@@ -1,5 +1,5 @@
--- 16bit Lion CPU
--- Theodoulos Liontakis (C) 2015 
+-- 32bit Lion CPU
+-- Theodoulos Liontakis (C) 2020 
 
 Library ieee;
 USE ieee.std_logic_1164.all;
@@ -84,7 +84,7 @@ END COMPONENT;
 shared variable Do,X1,Y1,X,Y,Ai: Std_logic_vector(31 downto 0):=ZERO16&ZERO16;
 shared variable IR: Std_logic_vector(15 downto 0):=ZERO16;
 shared variable AD: Std_logic_vector(31 downto 0);
-shared variable cin,Wen,DWen,sub,half,rhalf,f3: Std_logic;
+shared variable cin,Wen,DWen,sub,half,rhalf: Std_logic;
 shared variable M : Std_logic_vector(63 downto 0);
 shared variable R,RR: std_logic_vector(2 downto 0);
 shared variable rest,rest2,rest3,rest4,rel,setreg:boolean:=false;
@@ -135,7 +135,7 @@ constant param1_dw:std_logic_vector(0 to 127):=
 "00000001111001001111111111100111";
 
 constant param3_dw:std_logic_vector(0 to 127):=
-"00000011111010000001110000000111"&
+"00000011111110000001110000000111"&
 "10011101110011111101010111111110"&
 "11101110001100001111100001010000"&
 "00000001000101001011111111100111";
@@ -212,21 +212,20 @@ IF rising_edge(clock) THEN
 		when InitialState =>      -- Fetch and decode Instruction 
 			case TT is
 			when 0 =>
-				init_next_ins; Wen:='0';  DWen:='0'; DS<='1';
+				init_next_ins; Wen:='0';  DWen:='0'; DS<='1'; -- most of the times skipped
 			when others => --decode
+				rest3:=false; rest:=true; rest4:=false; rhalf:='0';   
+				Wen:='0'; DWen:='0'; DS<='1'; AS<='1';
 				op:=to_integer(unsigned(Di(15 downto 9)));
-				AS<='1'; rest:=true; rhalf:='0'; Wen:='0';  rest3:=false; DWen:='0'; DS<='1';
-				DACS:=param1_dw(op);	DACS2:=param3_dw(op); rest4:=false;
-				SWAP:=param2_swap(op);
+				DACS:=param1_dw(op);	DACS2:=param3_dw(op); SWAP:=param2_swap(op);
 				rel:=(param4_relative(op)='1'); fetch3<=(param5_dfetch(op)='1');
-				f3:=param5_dfetch(op);
 				IR:=Di(15 downto 0); RR:=Di(4 downto 2); R:=Di(8 downto 6);
 				bt:=to_integer(unsigned(Di(5 downto 2))); bwb:=Di(5);  	
 				IND:=Di(1); FTCH:=Di(0); PC<=PC+2;
 				r2:=Di(4 downto 2); r1:=Di(8 downto 6);	
-				WAC:= NOT (DACS or (IND and FTCH) or f3); 
+				WAC:= NOT (DACS or (IND and FTCH) or param5_dfetch(op)); 
 				if FTCH='1' then 
-					FF<=FetchState; AD:=PC+2; AS<='0'; 
+					FF<=FetchState; AD:=PC+2; AS<='0';  
 				else 
 					if IND='1' then
 						FF<=IndirectState;
@@ -254,11 +253,9 @@ IF rising_edge(clock) THEN
 			case TT is
 			when 0 =>
 				WAC:=not DACS; AD:=PC;  AS<='0'; 
-			--when 1 => --Cyclone IV
 			when others =>
 				Y:=Di; AS<='1'; 
 				if WAC='1' then PC<=PC+2; else PC<=PC+4; end if; 
-				--if IND='1' then FF<=IndirectState; else FF<=ExecutionState; end if;
 				if IND='1' then	
 						if rel then FF<=RelativeState; else FF<=IndirectState; end if;
 					else	
@@ -273,7 +270,6 @@ IF rising_edge(clock) THEN
 				WAC:=not dacs;
 				fetch2<=true; fetch<=true; AS<='0';   
 				if FTCH='1' then	AD:=X; X2<=X; else AD:=Y1; X2<=y1; end if;
-			--when 1 =>  --Cyclone IV
 			when others =>
 				if X2(0)='0' and bwb='1' and SWAP='1' then
 					X(7 downto 0):=Di(15 downto 8);
@@ -281,7 +277,7 @@ IF rising_edge(clock) THEN
 				else
 					X:=Di; 
 				end if;
-				AS<='1';	   FF<=ExecutionState;
+				AS<='1';	FF<=ExecutionState;
 				rest:=true;
 			end case;
 		when RelativeState =>              -- relative
@@ -539,30 +535,42 @@ IF rising_edge(clock) THEN
 			when "0100111" =>              -- BCLR  R,n
 				tmp:=X1;	tmp(bt+16):='0'; set_reg(r1,tmp,'0','0'); 
 				rest3:=true;
-			when "0001011" =>              -- BTST  R,R
-				if X1(to_integer(unsigned(Y1(4 downto 0))))= '0' then SR(ZR)<='1'; else SR(ZR)<='0';  end if;
+			when "0001011" =>              -- BTST  R,R / SRL.D R,R
+				if bwb='0' then
+					if X1(to_integer(unsigned(Y1(4 downto 0))))= '0' then SR(ZR)<='1'; else SR(ZR)<='0';  end if;
+				else
+					SR(CA)<=X1(to_integer(unsigned(Y1(4 downto 0)))-1);
+					tmp:= std_logic_vector(shift_right(unsigned (X1),to_integer(unsigned(Y1(4 downto 0)))));
+					set_reg(r1,tmp);
+				end if;
 				rest3:=true;
-			when "1010001" =>              -- BSET  R,R
-				tmp:=X1;	tmp(to_integer(unsigned(Y1(4 downto 0)))):='1';	set_reg(r1,tmp,'0','0'); 
+			when "1010001" =>              -- BSET  R,R / SLL.D R,R
+				if bwb='0' then
+					tmp:=X1;	tmp(to_integer(unsigned(Y1(4 downto 0)))):='1';
+				else
+					SR(CA)<=X1(16-to_integer(unsigned(Y1(4 downto 0))));
+					tmp:= std_logic_vector(shift_left(unsigned (X1),to_integer(unsigned(Y1(4 downto 0)))));
+				end if;
+				set_reg(r1,tmp,'0',bwb); 
 				rest3:=true;
 			when "0011110" =>              -- BCLR  R,R
 				tmp:=X1;	tmp(to_integer(unsigned(Y1(4 downto 0)))):='0'; set_reg(r1,tmp,'0','0'); 
 				rest3:=true;						
-			when "0011001" =>              --SRA Reg
+			when "0011001" =>              --SRA Reg,n
 				tmp(15 downto 0):= std_logic_vector(shift_right(signed (X1(15 downto 0)),bt));
 				set_reg(r1,tmp); 
 				SR(CA)<=X1(bt-1);
 				rest3:=true;
-			when "0011010" =>              --SLA Reg
+			when "0011010" =>              --SLA Reg,n
 				tmp(15 downto 0):= std_logic_vector(shift_left(signed (X1(15 downto 0)),bt));
 				set_reg(r1,tmp); 
 				rest3:=true;
-			when "0011011" =>              --SRL Reg
+			when "0011011" =>              --SRL Reg,n
 				SR(CA)<=X1(bt-1);
 				tmp(15 downto 0):= std_logic_vector(shift_right(unsigned (X1(15 downto 0)),bt));
 				set_reg(r1,tmp,'0');  
 				rest3:=true;
-			when "0011100" =>              --SLL Reg
+			when "0011100" =>              --SLL Reg,n
 			   SR(CA)<=X1(16-bt);
 				tmp(15 downto 0):= std_logic_vector(shift_left(unsigned (X1(15 downto 0)),bt));
 				set_reg(r1,tmp,'0');  
@@ -666,7 +674,7 @@ IF rising_edge(clock) THEN
 					tmp(7 downto 0):=X1(7 downto 0);
 				end if;
 				set_reg(r1,tmp);
-				rest2:=true;
+				rest3:=true;
 			when "0110000" =>              --CMPI.B Reg,0-15
 				half:='1';
 				Y1:= ZERO16&"000000000000"&IR(5 downto 2);
@@ -999,7 +1007,7 @@ IF rising_edge(clock) THEN
 				X1:=AoII;  Y1:=X; -- assembler reverses X1,Y1 
 				sub:=bwb;  AD:=X2;
 				IR(15 downto 9):="1100100"; -- continue ADD [n],n
-			when "0101111" =>                               -- ADD.D SUB.D [reg],num  
+			when "0101111" =>          -- ADD.D SUB.D [reg],num  
 				case TT is
 				when 0 =>
 					Y1:=X; AD:=X1;	sub:=bwb;  AS<='0';
@@ -1169,7 +1177,7 @@ IF rising_edge(clock) THEN
 					else
 						set_reg(r1,Di,bwb,'0'); 
 					end if;
-					rest2:=true;
+					rest3:=true;
 				end case;
 			when "1101100" => -- MOV .B  offset(An1),An2
 				case TT is
@@ -1189,7 +1197,7 @@ IF rising_edge(clock) THEN
 					when others =>
 						AS<='1';	
 						set_reg(r1,Di,'0','0');
-						rest2:=true;
+						rest3:=true;
 					end case;
 				else
 					case TT is
@@ -1376,7 +1384,7 @@ IF rising_edge(clock) THEN
 		if rest or rest2 then 
 			TT<=0;  
 			if rest2 then 
-			RW<='1'; IO<='0'; DS<='1'; AS<='1'; FF<=InitialState;
+				RW<='1'; IO<='0'; DS<='1'; AS<='1'; FF<=InitialState;
 			end if;
 		else
 			if rest3 then -- prepare next instruction and skip TT=0 step
