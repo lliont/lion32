@@ -1,5 +1,5 @@
 -----------------------------------------------------------------------------
--- XY Display controller for Lion Computer 
+-- XY Display controller and digital audio for Lion Computer 
 -- Theodoulos Liontakis (C) 2019  MCP4822
 
 Library ieee;
@@ -20,7 +20,8 @@ entity XY_Display_MCP4822 is
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535;
-		max_addr:natural range 0 to 4095:=4095
+		max_addr:natural range 0 to 4095:=4095;
+		start_addr:natural range 0 to 4095:=0
 	);
 end XY_Display_MCP4822;
 
@@ -64,7 +65,7 @@ begin
 	if  rising_edge(sclk)  then
 		if (lpcm/=pcm) or (reset='1') or (pcm='1' and mode='0') then
 			mcnt:=0; mcnt2:=0; lowbyte:='0'; spi_w<='0'; 
-			caddr:=0; swait:='0'; onetime:='0'; cs<='1';
+			caddr:=start_addr; swait:='0'; onetime:='0'; cs<='1';
 			x<="0000000000"; y<="0000000000"; Z<="00000000"; isplaying<='0'; 
 			cnt:=0; restart:=1; cx:=0; cy:=0; LDAC<='0';  lpcm:=pcm;
 		else
@@ -131,7 +132,7 @@ begin
 				if restart=1 then mcnt:=0; cnt:=0; restart:=0; 
 				elsif restart=2 then mcnt:=7; restart:=0; elsif swait='0' then mcnt:=mcnt+1; end if;
 			else --  PCM ------------------------------------------------------------------------------------------
-			   if (caddr/=max_addr) and (mode='1') then isplaying<='1'; else isplaying<='0';   end if;
+			   if (caddr<max_addr) and (mode='1') then isplaying<='1'; else isplaying<='0'; mcnt2:=0; end if;
 				case mcnt2 is
 				when 0 =>
 					swait:='0';  cs<='1';
@@ -141,7 +142,7 @@ begin
 					z<="00000000";
 				when 1 =>
 					if lowbyte='1' or stereo='1' then
-						if caddr<max_addr then caddr:=caddr+1;   end if; --else caddr:=0;
+						if caddr<max_addr then caddr:=caddr+1; end if; --else caddr:=0;
 					end if;
 				when 2 =>
 					cs<='0'; 

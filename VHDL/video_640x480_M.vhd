@@ -664,8 +664,8 @@ variable f,f2:std_logic_vector(15 downto 0);
 				c1<=c1+1;
 				if c3=0 and dur/=0 then dur<=dur-1; end if;
 			end if;
-			if (Aud='1' or Aud2='1') and c1&"0"<Vol then
-				Audio<='1';	
+			if c1&"0"<Vol then
+				Audio<=Aud or Aud2 ;	
 			else
 				Audio<='0';
 			end if;
@@ -681,15 +681,12 @@ variable f,f2:std_logic_vector(15 downto 0);
 				if c2/="000000000000" then temp<=not temp; end if;
 					c2<=(others => '0');			
 				end if;
-				--if vol > to_integer(unsigned(c2(7 downto 0))) then Aud<=temp;  else Aud<='0'; end if;
 				Aud<=temp;
 				if c4=f2(12 downto 0)  then 
 					if c4/="000000000000" and harmonic>0 then temp2<=not temp2;	end if;
 					c4<=(others => '0');			
 				end if;
 				Aud2<=temp2;
-				--if vol > to_integer(unsigned(c4(7 downto 0))) then Aud2<=temp2;  else Aud2<='0'; end if;
-				
 				end if;
 				if i=399 then i<=0; count<=count+'1'; else i<=i+1; end if;
 			else
@@ -712,8 +709,6 @@ entity lfsr_II is
     cout   :out std_logic;		-- Output of the counter
     clk    :in  std_logic;    -- Input rlock
     reset  :in  std_logic     -- Input reset
-	 --Vol    :in std_logic_vector(7 downto 0)
-	 --bw     :in std_logic_vector(15 downto 0) --band width
   );
 end entity;
 
@@ -731,7 +726,7 @@ begin
 				count <= ( count(23 downto 0) & linear_feedback);
 		  end if;
 	 end process;
-	 cout <=temp; -- count(19) when vol > to_integer(unsigned(count(7 downto 0)));
+	 cout <=temp; 
 end architecture;
 
 -----------------------------------------------------------------------------

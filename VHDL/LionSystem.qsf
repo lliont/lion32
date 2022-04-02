@@ -218,8 +218,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to G
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to MISO
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KCLK
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to KDATA
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST1*
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST2*
 set_location_assignment PIN_AB17 -to ADo[19]
 set_location_assignment PIN_V20 -to ADo[18]
 set_location_assignment PIN_V21 -to ADo[17]
@@ -249,6 +247,16 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SPICS
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING OFF
+set_global_assignment -name ECO_OPTIMIZE_TIMING ON
+set_global_assignment -name MLAB_ADD_TIMING_CONSTRAINTS_FOR_MIXED_PORT_FEED_THROUGH_MODE_SETTING_DONT_CARE ON
+set_global_assignment -name FORCE_FITTER_TO_AVOID_PERIPHERY_PLACEMENT_WARNINGS OFF
+set_location_assignment PIN_B7 -to Rx2
+set_location_assignment PIN_B6 -to Tx2
+set_location_assignment PIN_N21 -to SPICS3
+set_location_assignment PIN_P17 -to SPICS4
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST1
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to JOYST2
+set_global_assignment -name SDC_FILE LionSystem.sdc
 set_global_assignment -name VHDL_FILE LionSystem_true_32.vhd
 set_global_assignment -name VHDL_FILE LionCPU_true32.vhd
 set_global_assignment -name VHDL_FILE video_640x480_M.vhd
@@ -263,10 +271,6 @@ set_global_assignment -name BDF_FILE 74251_l.bdf
 set_global_assignment -name CDF_FILE output_files/LionSystem.cdf
 set_global_assignment -name CDF_FILE output_files/Chain1.cdf
 set_global_assignment -name QIP_FILE LPLL32.qip
-set_global_assignment -name SIP_FILE LPLL32.sip
-set_global_assignment -name ECO_OPTIMIZE_TIMING ON
-set_global_assignment -name MLAB_ADD_TIMING_CONSTRAINTS_FOR_MIXED_PORT_FEED_THROUGH_MODE_SETTING_DONT_CARE ON
-set_global_assignment -name FORCE_FITTER_TO_AVOID_PERIPHERY_PLACEMENT_WARNINGS OFF
-set_location_assignment PIN_B7 -to Rx2
-set_location_assignment PIN_B6 -to Tx2
+set_instance_assignment -name GLOBAL_SIGNAL GLOBAL_CLOCK -to lfsr_clk
+set_instance_assignment -name GLOBAL_SIGNAL GLOBAL_CLOCK -to "SoundI:SoundC1|play"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

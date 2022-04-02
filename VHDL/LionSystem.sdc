@@ -20,7 +20,7 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.1.1 Build 646 04/11/2019 SJ Lite Edition"
 
-## DATE    "Sat Feb 13 16:14:02 2021"
+## DATE    "Sat Apr 02 01:18:50 2022"
 
 ##
 ## DEVICE  "5CEFA2F23I7"
@@ -79,6 +79,10 @@ set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|gene
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
+set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
+set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
+set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
+set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[3].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
@@ -87,6 +91,10 @@ set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|gene
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
 set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
+set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
+set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
+set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
+set_clock_uncertainty -fall_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk}] -rise_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -hold 0.060  
 set_clock_uncertainty -rise_from [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk}] -fall_to [get_clocks {CPLL|lpll32_inst|altera_pll_i|general[2].gpll~PLL_OUTPUT_COUNTER|divclk}] -setup 0.080  

@@ -19,16 +19,13 @@
 #
 # Quartus Prime
 # Version 18.1.1 Build 646 04/11/2019 SJ Lite Edition
-# Date created = 21:01:53  May 31, 2020
+# Date created = 02:42:54  March 30, 2022
 #
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "18.1"
-DATE = "21:01:53  May 31, 2020"
+DATE = "02:42:54  March 30, 2022"
 
 # Revisions
 
 PROJECT_REVISION = "LionSystem"
-PROJECT_REVISION = "LionSystem32_1"
-PROJECT_REVISION = "Lionsys32_2"
-PROJECT_REVISION = "Lionsys_1"

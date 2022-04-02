@@ -29,7 +29,7 @@ entity LionSystem32 is
 		KCLK,KDATA:INOUT std_logic;
 		RTC_CE,RTC_CLK:OUT std_logic;
 		RTC_DATA:INOUT std_logic;
-		SCLK2,MOSI2,MOSI3,MOSI4,SPICS2,LDAC: OUT std_logic
+		SCLK2,MOSI2,MOSI3,MOSI4,SPICS2,LDAC,SPICS3,SPICS4: OUT std_logic
 	);
 end LionSystem32;
 
@@ -228,7 +228,8 @@ COMPONENT XY_Display_MCP4822 is
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535;
-		max_addr:natural range 0 to 4095:=4095
+		max_addr:natural range 0 to 4095:=4095;
+		start_addr:natural range 0 to 4095:=0
 	);
 end COMPONENT;
 
@@ -259,7 +260,8 @@ Signal ad1,vad0,vad1:  natural range 0 to 32767;
 Signal serspeed1,serspeed2:  natural range 0 to 32767:=1301;
 Signal spad1,spad3,spad5,spad7:  natural range 0 to 2047;
 Signal xyadr :  natural range 0 to 4095;
-Signal xylength :  natural range 0 to 4095:=4095;
+Signal xyendaddr :  natural range 0 to 4095:=4095;
+Signal xystartaddr:  natural range 0 to 4095:=0;
 Signal pperiod: natural range 0 to 65535:=3600;
 Signal sr,sw,ser2,sw2,sdready,sready,kr,kready,sdready2,sready2, noise: std_Logic;
 Signal sdi,sdo,sdi2,sdo2,kdo : std_logic_vector (7 downto 0);
@@ -303,7 +305,7 @@ XYRAM: dual_port_ram_dual_clock
 	GENERIC MAP (DATA_WIDTH  => 16,	ADDR_WIDTH => 12)
 	PORT MAP ( clockxy2,clock1, xyadr, to_integer(unsigned(AD(12 downto 1))), Do, xyw, xyq1, xyq2, BSEL );
 XYC:XY_Display_MCP4822
-	PORT MAP (clockxy,rst,xyadr,xyq1,SPICS2,SCLK2,MOSI2,MOSI3,MOSI4,LDAC,xyplay,XYmode,PCM,stereo,pperiod,xylength);
+	PORT MAP (clockxy,rst,xyadr,xyq1,SPICS2,SCLK2,MOSI2,MOSI3,MOSI4,LDAC,xyplay,XYmode,PCM,stereo,pperiod,xyendaddr,xystartaddr);
 VIDEO0: videoRGB80
 	PORT MAP ( clock1,clock0,Vmod,R0,G0,B0,BRI0,VSYN0,HSYN0,vint0,hint0,vad0,vq, hline0);
 VIDEO1: videoRGB1
@@ -342,6 +344,7 @@ PS2:PS2KEYB
 	
 rst2<=not reset when rising_edge(clock0);
 rst<=rst2 when rising_edge(clock0);
+PLLrst<=not reset;
 
 HOLDAo<=HOLDA;
 ASo<=AS when HOLDA='0' else 'Z'; 
@@ -383,6 +386,10 @@ AD2<=AD+2;
 AD_HI<=AD2 when (WACS='0' AND BACS='0' and IO='0') else AD;
 aligned<= AD(1)='0' or IO='1' or WACS='1' or BACS='1'; --(AD_HI(2)=AD(2));
 external<=((AD(19)='0') and ((AD(18) or AD(17) or AD(16)) ='1')) or (AD(19 downto 16)="1000");
+
+
+SPICS3<=SPICS2;
+SPICS4<=SPICS2;
 
 process (RW,clock1) --external ram 32 bit accesss as 2 X 16 bit
 begin
@@ -460,10 +467,14 @@ nen3<='1' when (ne3='1') and (play3='1') and (aq3(12 downto 0)/="0000000000000")
 
 NOISEO<=NOISE and (nen1 or nen2 or nen3);
 ncnt<=ncnt+1 when rising_edge(Clock0);
-lfsr_clk<= AUDIOA when (nen1='1' and aq(12 downto 0)<=512) 
-      else AUDIOB when (nen2='1' and aq2(12 downto 0)<=512) 
-		else AUDIOC when(nen3='1' and aq3(12 downto 0)<=512) 
-		else ncnt(13) when nen1='1'  or nen2='1'  or nen3='1'  else '0';
+lfsr_clk<= 
+		--AUDIOA when (nen1='1' and aq(12 downto 0)<=512) 
+      --else AUDIOB when (nen2='1' and aq2(12 downto 0)<=512) 
+		--else AUDIOC when(nen3='1' and aq3(12 downto 0)<=512) 
+		--else
+		ncnt(13)      when nen1='1'  
+		else ncnt(12) when nen2='1'  
+		else ncnt(11) when nen3='1'  else '0';
 
 R<= SR1 when  SPDET1='1' else SR2 when  SPDET2='1' else SR3 when SPDET3='1' 
         else SR4 when SPDET4='1' else R1 when Vmod='1' else R0;
@@ -542,7 +553,8 @@ Waud<='0' when AD=8  and IO='1' and VW and rising_edge(clock1) else '1' when ris
 Waud2<='0' when AD=10 and IO='1' and VW and rising_edge(clock1) else '1' when rising_edge(clock1);
 Waud3<='0' when AD=12 and IO='1' and VW and rising_edge(clock1) else '1' when rising_edge(clock1);
 HINT_EN<=Do(0) when  AD=13 and IO='1' and VW and rising_edge(clock1); 
-xylength<=to_integer(unsigned(Do)) when  AD=43 and IO='1' and VW and rising_edge(clock1); --xylength
+xyendaddr<=to_integer(unsigned(Do)) when  AD=43 and IO='1' and VW and rising_edge(clock1); --xyendaddr
+xystartaddr<=to_integer(unsigned(Do)) when  AD=44 and IO='1' and VW and rising_edge(clock1); 
 XYmode<=Do(0) when  AD=30 and IO='1' and VW and rising_edge(clock1);
 PCM   <=Do(1) when  AD=30 and IO='1' and VW and rising_edge(clock1); 
 stereo<=Do(2) when  AD=30 and IO='1' and VW and rising_edge(clock1); 
