@@ -156,13 +156,13 @@ constant param4_relative:std_logic_vector(0 to 127):=
 "00000000000000000000000000000000"&
 "00000000010100000000000000000000"&
 "00000000000000000000000000000000"&
-"00000000000000001111111111111111";
+"00000000000000001100111111111111";
 
 constant param5_dfetch:std_logic_vector(0 to 127):=
 "00000000000000000000000000000000"&
 "00000000010100000000000000000000"&
 "00000000000000000000000000000000"&
-"11111101000000000000000000000000";
+"11111101000000000010000000000000";
 
 begin
 	ALU0: ALU_LA4
@@ -232,7 +232,7 @@ IF rising_edge(clock) THEN
 				if FTCH='1' then 
 					FF<=FetchState; AD:=PC+2; AS<='0';  
 				elsif IND='1' then
-					FF<=IndirectState;
+					if rel then FF<=RelativeState; else	FF<=IndirectState; end if;
 				else 
 					FF<=ExecutionState; 
 				end if;
@@ -294,11 +294,11 @@ IF rising_edge(clock) THEN
 				AS<='1';	FF<=ExecutionState;
 				restart:=true;
 			end case;
---		when RelativeState =>              -- relative
---			X1:=Ao;	Y1:=AoII;
---			if fetch then RPC<=PC+X; else RPC<=PC+X1; end if;
---			if IND='1' then FF<=IndirectState; else FF<=ExecutionState; end if;
---			restart:=true; 
+		when RelativeState =>              -- relative
+			X1:=Ao;	Y1:=AoII;
+			RPC<=PC+X1;
+			if IND='1' then FF<=IndirectState; else FF<=ExecutionState; end if;
+			restart:=true; 
 		when ExecutionState =>        --- F="110" Operation execution cycles   
 			if TT=0 and not mem_trans then X1:=Ao;	Y1:=AoII;  end if;
 			if TT=0 then WAC:=NOT DACS2; end if;
@@ -921,11 +921,11 @@ IF rising_edge(clock) THEN
 			when "1010011" =>              --SUBI Reg,0-15   1011001-6275
 				Y1:=ZERO16&"000000000000"&IR(5 downto 2);
 				sub:='1'; bwb:='1';
-				IR(15 downto 9):="0000110"; -- continue as in ADD			
+				IR(15 downto 9):="0000110"; -- continue as in ADD.D			
 			when "1010100" =>              --ADDI Reg,0-15
 				Y1:=ZERO16&"000000000000"&IR(5 downto 2);
 				bwb:='0'; sub:='0';
-				IR(15 downto 9):="0000110"; -- continue as in ADD
+				IR(15 downto 9):="0000110"; -- continue as in ADD.D
 			when "1010101" =>              -- NEG NEG.D Rn
 				tmp:=X1; WAC:= not bwb ; DACS2:=bwb; Y1:=ZERO16&ONE16;
 				if bwb='1' then
@@ -1034,7 +1034,7 @@ IF rising_edge(clock) THEN
 					Y1:=Z1; 	set_flags;	FF<=StoreState;  	restart:=true;
 					sub:='0';
 				end case;
-			when "1011010" | "0110100" =>                      -- ADD SUB [reg],n  ADD.B [reg],n 
+			when "1011010" | "0110100" =>   -- ADD SUB [reg],n  ADD.B [reg],n 
 				case TT is
 				when 0 =>
 					Y1:=X; AD:=X1; AS<='0'; half:=bwb;
@@ -1181,7 +1181,7 @@ IF rising_edge(clock) THEN
 						restart3:=true;
 					end if;
 				end case;
-			when "1101111" => -- MOV .B  An1,offset(An2)
+			when "1101111" => -- MOV MOV.B  An1,offset(An2)
 				case TT is
 				when 0 =>
 					X1:=X; --half:=bwb; 
@@ -1196,7 +1196,7 @@ IF rising_edge(clock) THEN
 					end if;
 					restart3:=true;
 				end case;
-			when "1101100" => -- MOV .B  offset(An1),An2
+			when "1101100" => -- MOV MOV.B  offset(An1),An2
 				case TT is
 				when 0 =>
 					tmp:=Y1; 
@@ -1204,7 +1204,7 @@ IF rising_edge(clock) THEN
 				when others =>
 					AD:=Z1; Y1:=tmp; restart:=true; BAC:=bwb; FF<=StoreState; 
 				end case;
-			when "1101011" => -- MOV.D  An1/offset(An2)
+			when "1101011" => -- MOV.D  An1,offset(An2) offset(An1),An2
 				if bwb='0' then
 					case TT is
 					when 0 =>
@@ -1255,8 +1255,7 @@ IF rising_edge(clock) THEN
 			when "1100100" | "1100101" =>              -- ADD,SUB  [n],n  ADD.B, SUB.B [n],n
 				case TT is
 				when 0 =>
-					X1:=X; Y1:=Y; 
-					sub:=IR(9); half:=bwb;	AD:=X2;  
+					X1:=X; Y1:=Y; sub:=IR(9); half:=bwb;	AD:=X2;  
 				when 1  =>
 				when others =>
 					if bwb='1' then 
@@ -1271,7 +1270,20 @@ IF rising_edge(clock) THEN
 					set_flags;	FF<=StoreState;	restart:=true;
 					sub:='0';
 				end case;
-			
+			when "1110010" =>  -- ADD.D,SUB.D  [n],n 
+				case TT is
+				when 0 =>
+					X1:=X; Y1:=Y; half:='0'; sub:=bwb;	AD:=X2;  
+				when 1  =>
+				when others =>
+					Y1:=Z1;
+					set_flags;	FF<=StoreState;	restart:=true;
+					sub:='0';
+				end case;
+			when "1110011" =>              -- ADD.D SUB.D [n],reg 
+				X1:=X; sub:=bwb; AD:=X2;
+				IR(15 downto 9):="1110010"; -- continue ADD.D [n],n	
+				
 			when "1110000" =>              -- JR (Reg,NUM,[reg],[n])  JRXAD
 				if bwb='0' then
 					PC<=RPC; 
@@ -1291,29 +1303,39 @@ IF rising_edge(clock) THEN
 					if SR(JXAD)='0' then  tmp:=X1+2-bwb; else tmp:=X1-2+bwb; end if;
 					set_reg(r1,tmp,'0','0'); 
 				end if;
-				restart2:=true;				
-			when "1110010" =>              -- JRN (Reg,NUM,[reg],[n])
-				if SR(NG)='1' then	PC<=RPC; restart2:=true; else restart3:=true;	end if;
-			when "1110011" =>              -- JRO (Reg,NUM,[reg],[n])
-				if SR(OV)='1' then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1110100" =>              -- JRC (Reg,NUM,[reg],[n])
-				if SR(CA)='1' then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1110101" =>              -- JRG (Reg,NUM,[reg],[n])
-				If SR(ZR)='0' and (SR(NG)=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1110111" =>              -- JRBE (Reg,NUM,[reg],[n])
-				If SR(ZR)='1' or SR(CA)='1' then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1111000" =>              -- JRLE (Reg,NUM,[reg],[n])
-				If SR(ZR)='1' or (SR(NG)/=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1111001" =>              -- JRZ JRNZ (Reg,NUM,[reg],[n])
-				if SR(ZR)=bwb then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				restart2:=true;			
+				
+			--when "1110100" =>   
+			--when "1110101" =>     
+			--when "1110111" =>             
+			--when "1111000" =>    
+			--when "1111001" =>        
+
 			when "1111010" =>              -- JRA (Reg,NUM,[reg],[n])
 				If SR(ZR)='0' and SR(CA)='0' then PC<=RPC; restart2:=true; else restart3:=true; end if;
-			when "1111110" =>   -- JRGE - JRL (Reg,NUM,[reg],[n])
-				if bwb='0' then
-					If SR(ZR)='1' or (SR(NG)=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
-				else
-					If  (SR(NG)/=SR(OV)) then PC<=RPC; restart2:=true; else restart3:=true; end if;
-				end if;
+			when "1111110" =>   -- RELATIVE JUMPS
+				case r2 is
+				when "000"  =>  -- JRGE - JRL (Reg,NUM,[reg],[n])
+					if bwb='0' then
+						If SR(ZR)='1' or (SR(NG)=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+					else
+						If  (SR(NG)/=SR(OV)) then PC<=RPC; restart2:=true; else restart3:=true; end if;
+					end if;
+				when "001" =>  --JRZ JRNZ
+					if SR(ZR)=bwb then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				when "010" =>  --JRC JRNC JRB JRAE
+					if SR(CA)=bwb then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				when "011" =>  --JRN JRP
+					if SR(NG)=bwb then	PC<=RPC; restart2:=true; else restart3:=true;	end if;
+				when "100" =>  --JRO JRNO
+					if SR(OV)=bwb then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				when "101" =>  --JRG
+					If SR(ZR)='0' and (SR(NG)=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				when "110" =>  --JRBE
+					If SR(ZR)='1' or SR(CA)='1' then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				when "111" =>  --JRLE
+					If SR(ZR)='1' or (SR(NG)/=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
+				end case;
 			when "1110110" =>              -- JRSR (Reg,NUM,[reg],[n])
 				case TT is
 				when 0 =>
@@ -1343,14 +1365,14 @@ IF rising_edge(clock) THEN
 				AD:=RPC;  BAC:=bwb;
 				AS<='1';	restart:=true; FF<=StoreState;
 			when "0101001" =>              -- MOVR.D [n],num	 0101001  
-				AD:=RPC;  BAC:=bwb;
+				AD:=RPC;  BAC:='0';
 				Y1:=Y;
 				AS<='1';	restart:=true; FF<=StoreState;
 			when "0101011" =>              -- MOVR MOVR.B[n],num  
 				AD:=RPC;  BAC:=bwb;
 				Y1:=Y;
 				AS<='1';	restart:=true; FF<=StoreState;
-			when "1111101" =>   -- MOVR.D GADR
+			when "1111101" =>   -- MOVR.D GADR  R,  addr (addr)
 				if bwb='0' then
 					case TT is
 					when 0 =>
@@ -1365,7 +1387,7 @@ IF rising_edge(clock) THEN
 						restart3:=true;
 						tmp:=Di; set_reg(r1,tmp,'0','0');  
 					end case;
-				else 
+				else           -- MOVR.D (addr),Rn
 					AD:=RPC;   
 					--if fetch then Y1:=X; end if; --***** CHECK AGAIN
 					AS<='1';	restart:=true; FF<=StoreState;

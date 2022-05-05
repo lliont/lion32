@@ -15,7 +15,7 @@ entity XY_Display_MCP4822 is
 		reset: IN std_logic;
 		addr: OUT natural range 0 to 4095;
 		Q: IN std_logic_vector(15 downto 0);
-		CS,SCK,SDI,SDI2,SDI3: OUT std_logic;
+		CS,CS2,CS3,SCK,SDI,SDI2,SDI3: OUT std_logic;
 		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
@@ -35,6 +35,7 @@ Signal x,y: std_logic_vector(9 downto 0);
 Signal z: std_logic_vector(7 downto 0);
 Signal spi_in,spi_in2,spi_in3: std_logic_vector(15 downto 0);
 Shared variable caddr: natural range 0 to 4095:=0;
+Shared variable maxad: natural range 0 to 4095:=4095;
 Shared variable e,sx,sy:integer range -2048 to 2047;
 Shared variable lx,ly,cx,cy,dx,dy,dx2,dy2:integer range -2048 to 2047;
 Shared variable restart: natural range 0 to 3;
@@ -63,11 +64,12 @@ process (sclk,reset)
 
 begin
 	if  rising_edge(sclk)  then
+		
 		if (lpcm/=pcm) or (reset='1') or (pcm='1' and mode='0') then
 			mcnt:=0; mcnt2:=0; lowbyte:='0'; spi_w<='0'; 
-			caddr:=start_addr; swait:='0'; onetime:='0'; cs<='1';
+			caddr:=start_addr; swait:='0'; onetime:='0'; cs<='1'; cs2<='1'; cs3<='1';
 			x<="0000000000"; y<="0000000000"; Z<="00000000"; isplaying<='0'; 
-			cnt:=0; restart:=1; cx:=0; cy:=0; LDAC<='0';  lpcm:=pcm;
+			cnt:=0; restart:=1; cx:=0; cy:=0; LDAC<='0';  lpcm:=pcm; maxad:=max_addr;
 		else
 			if PCM='0' then
 				case mcnt is
@@ -83,8 +85,8 @@ begin
 					y(9 downto 2)<=Q(7 downto 0); 
 					x(9 downto 2)<=Q(15 downto 8);
 				when 4 =>
-					if caddr<max_addr then caddr:=caddr+1; else caddr:=0;  end if;
-					if mode='1' or z=0 then cs<='0'; mcnt:=8; cnt:=maxd; end if;
+					if caddr<maxad then caddr:=caddr+1; else caddr:=0;  end if;
+					if mode='1' or z=0 then cs<='0'; cs2<='0'; cs3<='0'; mcnt:=8; cnt:=maxd; end if;
 					cx:=to_integer(signed("0"&x)); cy:=to_integer(signed("0"&y)); 
 					if z=0 or mode='1' then lx:=cx; ly:=cy; end if;
 				when 5 =>
@@ -102,7 +104,7 @@ begin
 				when 8 =>
 						if dy>dx then ly:=ly+sy; e:=e+dx2; else lx:=lx+sx; e:=e+dy2; end if;
 				when 9 => 
-					cs<='0';
+					cs<='0'; cs2<='0'; cs3<='0';
 					If stereo='0' then
 						spi_in<= "00110"&std_logic_vector(to_unsigned(ly,10))&"0";
 						spi_in3<="00110"&std_logic_vector(to_unsigned(lx,10))&"0";
@@ -121,7 +123,7 @@ begin
 				when 14 =>
 					cnt:=cnt+1;
 				when 15 =>
-					cs<='1'; 
+					cs<='1'; cs2<='1'; cs3<='1';
 				when 16 =>
 					if cnt>=maxd then restart:=1; else restart:=2; end if;
 				when 17 =>
@@ -132,20 +134,20 @@ begin
 				if restart=1 then mcnt:=0; cnt:=0; restart:=0; 
 				elsif restart=2 then mcnt:=7; restart:=0; elsif swait='0' then mcnt:=mcnt+1; end if;
 			else --  PCM ------------------------------------------------------------------------------------------
-			   if (caddr<max_addr) and (mode='1') then isplaying<='1'; else isplaying<='0'; mcnt2:=0; end if;
+			   if (caddr<maxad) and (mode='1') then isplaying<='1'; else isplaying<='0'; mcnt2:=0; end if;
 				case mcnt2 is
 				when 0 =>
-					swait:='0';  cs<='1';
+					swait:='0';  cs<='1'; cs2<='1'; cs3<='1';
 					--if mode='0' then mcnt2:=8; end if;
 					y(9 downto 0)<=Q(7 downto 0)&"00"; 
 					x(9 downto 0)<=Q(15 downto 8)&"00";
 					z<="00000000";
 				when 1 =>
 					if lowbyte='1' or stereo='1' then
-						if caddr<max_addr then caddr:=caddr+1; end if; --else caddr:=0;
+						if caddr<maxad then caddr:=caddr+1; end if; --else caddr:=0;
 					end if;
 				when 2 =>
-					cs<='0'; 
+					cs<='0'; cs2<='0'; 
 					if stereo='0' then
 						if lowbyte='0' then
 							spi_in3<= "1011000000000000";
@@ -171,7 +173,7 @@ begin
 				when 7 =>
 				when 8 =>
 				when others=>
-					swait:='0'; cs<='1'; 
+					swait:='0'; cs<='1'; cs2<='1';
 				end case;
 				if swait='0' or mode='0' then 
 					if mcnt2<pperiod then mcnt2:=mcnt2+1; else mcnt2:=0; lowbyte:=not lowbyte; end if; 

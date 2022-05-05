@@ -19,7 +19,7 @@ main (int argc, int *argv)
 		fp=fopen(fn,"r");
 	}	
 	if (fp<=0) { 
-		printf(" Error Opening File\n"); 
+		printf(" Error Opening File: %s\n",fn); 
 	} 
 	else 
 	{

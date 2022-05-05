@@ -71,8 +71,8 @@ CXYBUF:	OUT		A1,0
 MEMTST:     MOV.D		A2,(A6)
 		MOV.D		A3,A2
 		NOT.D		A3
-		MOV.D		(A6),A3
-		MOV.D		($FFFFC),$0F
+		MOV.D      (A6),A3
+		;MOV.D		($FFFFC),$0F
 		MOV.D		A0,(A6)
 		MOV.D		(A6),A2
 		CMP.D		A0,A3
@@ -83,10 +83,11 @@ MEMOK:	MOV		A2,$3404
 		BTST		A0,1
 		JRNZ		6
 		IJSR		PRNHEX
-		CMP.D		A6,$00FFFFFF
+		CMP.D		A6,$00100000
 		JC		MEMTST
 		
-MEMNOK:	MOV.D		(MEMTOP),A6
+MEMNOK:	SUBI	A6,4
+		MOV.D	(MEMTOP),A6
 		MOVI	A0,0
 		INT	4 
 		MOVI	A0,7
@@ -2306,23 +2307,23 @@ DIV1:		MOV.D		A0,A2
 		MOVI		A1,0    ;A0=A2   id divider > divident res=0 rem=divident	
 		JMP		DIVE
 DIV4:		PUSHI		A3
-		MOV.D		A0,A2
-		ALNG		A0,A2
+		ALNG		A2,A0
 		ALNG		A1,A3
 		XCHG		A3,A1
-		SUB.D		A1,A2
-		SRL.D		A3,A2  ; align back
-		SRL.D		A0,A2
-DIV9:		MOV.D       A2,A1
+		SUB.D		A1,A0
+		SRL.D		A3,A0  ; align back
+		SRL.D		A2,A0
+		MOV.D       A0,A1
 		MOVI		A1,0     ; quotient
-DIV11:	CMP.D		A0,A3  ; compare remainder with divisor
+DIV11:	CMP.D		A2,A3  ; compare remainder with divisor
 		JC		DIV8		
-		BSET		A1,A2
-		SUB.D		A0,A3
+		BSET		A1,A0
+		SUB.D		A2,A3
 DIV8:		SRL.D		A3,1
-		SUBI		A2,1
-		JP		DIV11 
-DIV14:	POPI		A3
+		SUBI		A0,1
+		JP		DIV11
+		MOV.D		A0,A2 
+		POPI		A3
 		BTST		A3,0
 		JZ		DIVE
 		NEG.D		A1
@@ -2352,7 +2353,7 @@ UDIV4:	PUSHI		A3
 		SUB.D		A1,A2
 		SRL.D		A3,A2
 		SRL.D		A0,A2
-UDIV9:	MOV.D		A2,A1  
+		MOV.D		A2,A1  
 		MOVI		A1,0       ; quotient
 UDIV11:	CMP.D		A0,A3  ; compare remainder with divisor
 		JC		UDIV8		
@@ -3221,6 +3222,7 @@ CTABLE3     DS    =128*8   ; for caracters >127
 CTAB3END:
 ORG $5000
 START:	
+
 
 
 

@@ -326,7 +326,7 @@ ColorYX (y,x,f,b) int x,y,f,b;
   #endasm
 }
 
-Screen (fcol,bcol) int fcol,bcol;
+Screen (bcol,fcol) int fcol,bcol;
 {
   #asm
   MOV.D A0,12(A6)

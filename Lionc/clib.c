@@ -27,6 +27,28 @@ _main() {
   exit(0);
 }
 
+abort() {
+   return 0;
+}
+
+abs(int n) {
+	#asm
+	MOV.D A1,8(A6)
+	BTST  A1,31
+	JRZ 2
+	NEG.D A1
+	#endasm
+}
+
+avail(int abort) {
+  char x;
+  if(&x < _memptr) {
+    if(abort) exit(1);
+    return (0);
+    }
+  return (&x - _memptr);
+  }
+
 /*
 ** free(ptr) - Free previously allocated memory block.
 ** Memory must be freed in the reverse order from which
@@ -169,8 +191,9 @@ fclose(fd) int fd; {
 ** Returns non-zero if fd is at eof, else zero.
 */
 feof(fd) int fd; {
-  if (fd>4) fd=5+(fd-ftab)/34;
-  return (_fstatus[fd] & EOFBIT);
+  //if (fd>4) fd=5+(fd-ftab)/34;
+  //return (_fstatus[fd] & EOFBIT);
+  if (ftell(fd)>=fsize(fd)) return 1; else return 0;
   }  
   
 ferror(fd) int fd; {
@@ -292,6 +315,64 @@ scanf(argc) int argc; {
 getchar () {
 	return (getkey());
 }
+
+/*
+** Gets an entire string (including its newline
+** terminator) or size-1 characters, whichever comes
+** first. The input is terminated by a null character.
+** Entry: str  = Pointer to destination buffer.
+**        size = Size of the destination buffer.
+**        fd   = File descriptor of pertinent file.
+** Returns str on success, else NULL.
+*/
+fgets(str, size, fd) char *str; unsigned size, fd; {
+  return (_gets(str, size, fd, 1));
+  }
+
+/*
+** Gets an entire string from stdin (excluding its newline
+** terminator) or size-1 characters, whichever comes
+** first. The input is terminated by a null character.
+** The user buffer must be large enough to hold the data.
+** Entry: str  = Pointer to destination buffer.
+** Returns str on success, else NULL.
+*/
+gets(str) char *str; {
+  return (_gets(str, 32767, stdin, 0));
+  }
+  
+iscons(fd) int fd; {
+	if (fd<5) return 1; else return 0;
+}
+
+_gets(str, size, fd, nl) char *str; unsigned size, fd, nl; {
+  int backup; char *next;
+  next = str;
+  while(--size > 0) {
+    switch (*next = fgetc(fd)) {
+      case  EOF: *next = NULL;
+                 if(next == str) return (NULL);
+                 return (str);
+      case '\n': *(next + nl) = NULL;
+                 return (str);
+      case  RUB: if(next > str) backup = 1; else backup = 0;
+                 goto backout;
+      case WIPE: backup = next - str;
+        backout: if(iscons(fd)) {
+                   ++size;
+                   while(backup--) {
+                     fputs("\b \b", stderr);
+                     --next; ++size;
+                     }
+                   continue;
+                   }
+        default: ++next;
+      }
+    }
+  *next = NULL;
+  return (str);
+  }
+
   
 int uget=-1;
 //char chbuf;
@@ -671,10 +752,10 @@ sign(nbr)  int nbr;  {
   
 
 // abs -- returns absolute value of nbr
-abs(nbr)  int nbr; {
+/* abs(nbr)  int nbr; {
   if(nbr < 0) return (-nbr);
   return (nbr);
-  } 
+  }  */
   
 /*
 ** atoi(s) - convert s to integer.
@@ -938,34 +1019,35 @@ left(str) char *str; {
   while(*str++ = *str2++);
   }
   
-char _lex[128] = {
-       0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  /* NUL - /       */
+/* char _lex[128] = {
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  /* NUL - /       
       10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
       20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
       30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
       40, 41, 42, 43, 44, 45, 46, 47,
-      65, 66, 67, 68, 69, 70, 71, 72, 73, 74,  /* 0-9           */
-      48, 49, 50, 51, 52, 53, 54,              /* : ; < = > ? @ */
-      75, 76, 77, 78, 79, 80, 81, 82, 83, 84,  /* A-Z           */
+      65, 66, 67, 68, 69, 70, 71, 72, 73, 74,  /* 0-9           
+      48, 49, 50, 51, 52, 53, 54,              /* : ; < = > ? @ 
+      75, 76, 77, 78, 79, 80, 81, 82, 83, 84,  /* A-Z           
       85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
       95, 96, 97, 98, 99,100,
-      55, 56, 57, 58, 59, 60,                  /* [ \ ] ^ _ `   */
-      75, 76, 77, 78, 79, 80, 81, 82, 83, 84,  /* a-z           */
+      55, 56, 57, 58, 59, 60,                  /* [ \ ] ^ _ `   
+      75, 76, 77, 78, 79, 80, 81, 82, 83, 84,  /* a-z           
       85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
       95, 96, 97, 98, 99,100,
-      61, 62, 63, 64,                          /* { | } ~       */
-     127};                                     /* DEL           */
+      61, 62, 63, 64,                          /* { | } ~       
+     127};                                     /* DEL           
+	 */
 
 /*
 ** lexcmp(s, t) - Return a number <0, 0, or >0
 **                as s is <, =, or > t.
 */
-lexcmp(s, t) char *s, *t; {
+/* lexcmp(s, t) char *s, *t; {
   while(lexorder(*s, *t) == 0)
     if(*s++) ++t;
     else return (0);
   return (lexorder(*s, *t));
-  }
+  } */
 
 /*
 ** lexorder(c1, c2)
@@ -976,9 +1058,9 @@ lexcmp(s, t) char *s, *t; {
 ** colating sequence.
 **
 */
-lexorder(c1, c2) int c1, c2; {
+/* lexorder(c1, c2) int c1, c2; {
   return(_lex[c1] - _lex[c2]);
-  }
+  } */
  
 #define ALNUM     1
 #define ALPHA     2
@@ -1022,3 +1104,159 @@ ispunct (c) int c; {return (_is[c] & PUNCT );} /* !alnum && !cntrl && !space */
 isspace (c) int c; {return (_is[c] & BLANK );} /* HT, LF, VT, FF, CR, ' ' */
 isupper (c) int c; {return (_is[c] & UPPER );} /* 'A'-'Z' */
 isxdigit(c) int c; {return (_is[c] & XDIGIT);} /* '0'-'9', 'a'-'f', 'A'-'F' */
+
+#asm
+	 
+ ;_XY EQU $4868
+ _putchar:
+	 MOV.D A4,SP    
+	 MOV.D A1,8(A4) 
+	 MOV.D A7,$3519501E
+	 IN A5,24
+	 OR.B A5,A5
+	 JRZ 2
+	 SWAP.D A7
+	 MOV.D A4,_XY
+	 MOV.B A3,(A4)
+	 MOV.B A2,1(A4)
+	 SWAP A7
+	 CMP.B A3,A7 
+	 JRC _pc2    
+	 SWAP A7
+	 MOVI A3,0
+	 INC  A2
+	 CMP.B A2,A7
+	 JRC 4
+	 MOV.B A2,A7
+	 DEC A2
+	 MOVI A0,6
+	 INT 4
+	 SWAP A7
+ _pc2: MOV.B 1(A4),A2
+	 SWAP A7
+	 MOV.B (A4),A3
+	 CMP.B A1,13
+	 JRZ _pc1
+	 CMP.B A1,31
+	 JRA 4
+	 MOV.B A1,32
+	 MOV A2,(_XY)
+	 MOVI A0,4
+	 INT 4
+	 ADD A2,$0100
+	 MOV (_XY),A2
+	 RET
+ _pc1: 
+	 MOVI A0,6
+	 INT 4
+	 DEC A7
+	 CMP.B A2,A7
+	 JRZ 2
+	 ADDI A2,1
+	 MOV.B 1(A4),A2
+	 MOV.B (A4),0
+	 RET
+	 
+
+ _getkey:
+ __getkey:
+	 MOVI A0,0
+	 INT 4
+	 BTST A0,1
+	 JRZ 2
+	 RET
+	 MOVI A0,7
+	 INT 4
+	 BTST A0,2
+	 JRZ _getkey
+	 MOVI A0,10
+	 INT 4
+	 RET
+	 
+
+ _hitkey:
+ __hitkey:
+	 MOVI A0,7
+	 INT 4
+	 AND.D A0,$04
+	 MOV.D A1,A0
+	 
+
+	__switch: 
+	GADR A0,_base
+	MOVR.D (Baddr),A0
+	 POP A2
+	_sw1: MOV.D A0,(A2)
+	 ADDI A2,4
+	 MOV.D A5,(A2)
+	 CMPI A0,0
+	 JZ A2
+	 MOVR.D A4,(Baddr)
+	 ADD.D A0,A4
+	 CMP.D A5,A1
+	 JZ A0
+	 ADDI A2,4
+	 JR _sw1
+	 
+
+ __eq: 
+	 CMP.D A2,A1
+	 JRZ _EQ1
+	 MOVI A1,0
+	 RET
+ _EQ1: MOVI A1,1
+	 RET
+ __ne: 
+	 CMP.D A2,A1
+	 JRNZ _EQ1
+	 MOVI A1,0
+	 RET
+ __lt: 
+	 CMP.D A2,A1
+	 JRL _EQ1
+	 MOVI A1,0
+	 RET
+ __le: 
+	 CMP.D A2,A1
+	 JRLE _EQ1
+	 MOVI A1,0
+	 RET
+ __ge: 
+	 CMP.D A2,A1
+	 JRGE _EQ1
+	 MOVI A1,0
+	 RET
+ __gt: 
+	 CMP.D A2,A1
+	 JRG _EQ1
+	 MOVI A1,0
+	 RET
+ __ult: 
+	 CMP.D A2,A1
+	 JRC _EQ1
+	 MOVI A1,0
+	 RET
+ __ule: 
+	 CMP.D A2,A1
+	 JRBE _EQ1
+	 MOVI A1,0
+	 RET
+ __uge: 
+	 CMP.D A2,A1
+	 JRA _EQ1
+	 JRZ _EQ1
+	 MOVI A1,0
+	 RET
+ __ugt: 
+	 CMP.D A2,A1
+	 JRA _EQ1
+	 MOVI A1,0
+	 RET
+
+ _CCARGC:
+	 MOV.D A1,A3
+
+ _exit:
+	 RET
+ #endasm
+ 

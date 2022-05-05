@@ -31,7 +31,7 @@ main (int argc, int *argv)
 		cc=read(fp,buf,8192);
 		while (cc>0)
 		{
-			IOout(30,2);
+			IOout(30,2); IOout(43,(cc-1)/2);
 			MEMtoIO(buf,pcmbuf,cc);
 			IOout(30,3);
 			cc=read(fp,buf,8192);
