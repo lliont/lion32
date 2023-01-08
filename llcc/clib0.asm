@@ -1,0 +1,315 @@
+ORG 0
+
+_XY EQU $4868
+FMEMORG EQU $4864
+
+_argnum DD 0
+_argbs DD 0
+_ccargc:
+_argcnt:
+ MOVR.D A1,(_argnum)
+ POP A0
+ PUSH A1
+ PUSH A0
+ RET
+_argbase:
+ MOVR.D A1,(_argbs)
+ POP A0
+ PUSH A1
+ PUSH A0
+ RET
+
+
+_putchar:
+ PUSH A5
+ PUSH A6
+ PUSH A7
+ MOV.D A1,(A7) 
+ MOV.D A7,$3519501E
+ IN A5,24
+ OR.B A5,A5
+ JRZ 2
+ SWAP.D A7
+ MOV.D A4,_XY
+ MOV.B A3,(A4)
+ MOV.B A2,1(A4)
+ SWAP A7
+ CMP.B A3,A7
+ JRC _pc2    
+ SWAP A7
+ MOVI A3,0
+ INC  A2
+ CMP.B A2,A7
+ JRC 4
+ MOV.B A2,A7
+ DEC A2
+ MOVI A0,6
+ INT 4
+ SWAP A7
+_pc2: MOV.B 1(A4),A2
+ SWAP A7
+ MOV.B (A4),A3
+ CMP.B A1,13
+ JRZ _pc1
+ CMP.B A1,31
+ JRA 4
+ MOV.B A1,32
+ MOV A2,(_XY)
+ MOVI A0,4
+ INT 4
+ ADD A2,$0100
+ MOV (_XY),A2
+ POP A7
+ POP A6
+ POP A5
+ POP A0
+ PUSH A1
+ JMP A0
+_pc1: 
+ MOVI A0,6
+ INT 4
+ DEC A7
+ CMP.B A2,A7
+ JRZ 2
+ ADDI A2,1
+ MOV.B 1(A4),A2
+ MOV.B (A4),0
+ POP A7
+ POP A6
+ POP A5
+ POP A0
+ PUSH A1
+ JMP A0
+
+__alloc:  
+ MOV.D A1,(A7)
+ MOVI A0,7
+ INT 5
+ POP A1
+ PUSH A0
+ JMP A1
+_exit:
+ RET
+
+__free:
+ MOV.D A1,(A7)
+ MOV.D A2,(FMEMORG) 
+ SUB.D A2, A1
+ MOVI A0,8
+ INT 5
+ POP A0
+ PUSH A2
+ JMP A0
+
+_fsize:
+ MOV.D A1,(A7)
+ MOV.D A0,21
+ INT 4
+ POP A1
+ PUSH A0
+ JMP A1
+
+_fseek:
+ MOV.D A1,(A7)
+ MOV.D A2,-4(A7)
+ MOV.D A0,19
+ INT 4
+ POP A1
+ PUSH A2
+ JMP A1
+
+_ftell:
+ MOV.D A2,(A7)
+ MOV.D A0,20
+ INT 4
+ POP A1
+ PUSH A0
+ JMP A1
+
+__fclose:
+ MOV.D A1,(A7)
+ MOV.D A0,17
+ INT 4
+ POP A1
+ PUSH A0
+ JMP A1
+
+__fopen:
+ MOV.D A4,(A7)
+ MOV.D A1,-4(A7)
+ MOV.D A0,16
+ INT  4
+ POP A1
+ PUSH A0
+ JMP A1
+
+__fgc DW 0
+__fgetc:
+ MOV.D A1,(A7)
+ MOVI A2,1
+ GADR A3,__fgc
+ MOV.D A0,18
+ INT 4
+ POP A2
+ PUSH A1
+ JMP A2
+
+_read:
+ MOV.D A1,(A7)
+ MOV.D A3,-4(A7)
+ MOV.D A2,-8(A7)
+ MOV.D A0,18
+ INT 4
+ MOVR.B (__fgc),A1
+ POP A2
+ PUSH A0
+ JMP A2
+
+ _getkey:
+ __getkey:
+ MOVI A0,0
+ INT 4
+ BTST A0,1
+ JRZ 6
+ POP A2
+ PUSH A1
+ JMP A2
+ MOVI A0,7
+ INT 4
+ BTST A0,2
+ JRZ _getkey
+ MOVI A0,10
+ INT 4
+ POP A2
+ PUSH A1
+ JMP A2
+
+ _hitkey:
+ __hitkey:
+ MOVI A0,7
+ INT 4
+ AND.D A0,$04
+ POP A1
+ PUSH A0
+ JMP A1
+
+ _IOout:
+ MOV.D A0,(A7)
+ MOV.D A1,-4(A7)
+ OUT A0,A1
+ POP A0
+ PUSH A1
+ JMP A0
+
+ _IOin:
+ MOV.D A0,(A7)
+ IN A1,A0
+ POP A0
+ PUSH A1
+ JMP A0
+
+ _IOoutb:
+ MOV.D A0,(A7)
+ MOV.D A1,-4(A7)
+ OUT.B A0,A1
+ POP A0
+ PUSH A1
+ JMP A0
+
+ _IOinb:
+ MOV.D A0,(A7)
+ MOVI A1,0
+ IN.B A1,A0
+ POP A0
+ PUSH A1
+ JMP A0
+
+ __fputc:
+ MOV.D A2,(A7)
+ MOV.D A1,-4(A7)
+ MOV.D A0,22
+ INT  4
+ POP A1
+ PUSH A2
+ JMP A1
+
+_ftoi:
+MOV.D A3,(A7)
+__ftoi:
+ PUSH A5
+MOV.D A5, A3
+MOV.D A2, A3
+AND.D A2,$80000000
+AND.D A3,$007FFFFF
+AND.D A5,$7FFFFFFF
+SRL.D A5,8
+SRL.D A5,15
+MOV.D A0, A3
+OR.D A0, A5
+JRNZ 8
+MOVI A1,0
+JR FTOI_E
+OR.D A3,$800000
+SUB.D A5,127
+MOV.D A1,$7FFFFFFF
+CMP.D A5,30
+JRG FTOI_E
+MOVI A1,0
+CMPI A5,0
+JRL FTOI_E
+MOVI A1,1
+FTOI_1:
+CMPI A5,0
+JRZ FTOI_E
+SLL.D A1,1
+BTST A3,22
+JRZ 2
+BSET A1,0
+SLL.D A3,1
+SUBI A5,1
+JR FTOI_1
+FTOI_E:
+BTST A2,31
+JRZ 2
+NEG.D A1
+ POP A5
+ POP A0 
+ PUSH A1
+ JMP A0
+
+_itof:
+  MOV.D A4,(A7)
+__itof:
+  PUSH A5
+  PUSH A7
+  MOVI A5,0
+  MOVI A3,0
+  MOVI A1,0
+  CMPI A4,0
+  JRZ ITOF_3
+  BTST A4,31
+  JRZ 8
+  NEG.D A4
+  MOV.D  A5,$80000000
+  MOV.D  A7,=24+31+127
+ITOF_1: 
+  BTST A3,23
+  JRNZ ITOF_2
+  SLLL.D A3,A4
+  SUBI A7,1
+  JR ITOF_1
+ITOF_2: 
+  AND.D A3,$7FFFFF
+  SLL.D A7,8 
+  SLL.D A7,15
+  OR.D A5,A7
+  OR.D A3,A5
+  MOV.D A1,A3
+ITOF_3:
+ POP A7
+ POP A5
+ POP A0 
+ PUSH A1
+ JMP A0
+
+
