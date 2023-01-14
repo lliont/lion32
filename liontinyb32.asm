@@ -144,8 +144,8 @@ ST2:		MOVI	A1,0
 		MOVI	A0,0
 		JSR	prtstg
 ST3:		MOV   (UINT),0
-		MOVI	A0,0
-		MOV.B	A0,'>'
+		;MOVI	A0,0
+		CMOV.B A0,'>'
 		JSR	GETLN
 		PUSH	A4         ; A4 end of text in buffer
 		MOV.D A3,BUFFER
@@ -251,8 +251,8 @@ TN1:
 		PUSH	A2
 		MOVI	A2,10
 		MULU.D A1,A2
-		MOVI	A0,0
-            MOV.B	A0,(A3)
+		;MOVI	A0,0
+            CMOV.B A0,(A3)
 		SUB.B	A0,'0'
 		MOVHL	A0,0
 		ADDI	A3,1
@@ -276,8 +276,8 @@ DECIM:	PUSH	A1
 		MOVI	A4,1
 		MOVI	A1,0
 TN2:		ADDI	A3,1
-		MOVI  A0,0
-		MOV.B	A0,(A3)
+		;MOVI  A0,0
+		CMOV.B A0,(A3)
 		CMP.B	A0,'0'
 		JC	DRET
 		CMP.B A0,':'
@@ -329,8 +329,8 @@ UTN1:
 		MULU.D A1,A2
 		CMPI	A2,0
 		JNZ	QHOW
-		MOVI	A0,0
-            MOV.B	A0,(A3)
+		;MOVI	A0,0
+            CMOV.B A0,(A3)
 		SUB.B	A0,'0'
 		MOVHL	A0,0
 		ADDI	A3,1
@@ -2292,8 +2292,8 @@ RND:	JSR	PARN
 	MOVI	A1,0
 	RET
 RND1:	
-	MOVI	A0,0
-	MOV	A0,(RAND)
+	;MOVI	A0,0
+	CMOV	A0,(RAND)
 	PUSH  A2
 	PUSH  A1
 	MOV.D	A2,48271
@@ -2521,13 +2521,13 @@ CURDAT0:
 	OUT	A1,$CFFF
 	ADD.D	A1,6
 	JMPX	CURDAT0
-	MOVI	A0,0
-	MOV.B	A0,(XX)
+	;MOVI	A0,0
+	CMOV.B A0,(XX)
 	SLL.D	A0,2
 	ADDI  A0,4
 	OUT	28752,A0   ; x
-	MOVI	A0,0
-	MOV.B A0,(YY)
+	;MOVI	A0,0
+	CMOV.B A0,(YY)
 	SLL.D	A0,3
 	OUT	28754,A0  ; y
 	JMP	CURE
@@ -2544,13 +2544,13 @@ CURDAT1:
 	OUT	A1,$FFFF
 	ADD.D	A1,2
 	OUT	A1,$FFFF
-	MOVI	A0,0
-	MOV.B	A0,(XX)
+	;MOVI	A0,0
+	CMOV.B A0,(XX)
 	MULU	A0,6
 	ADDI  A0,4
 	OUT	28752,A0   ; x
-	MOVI	A0,0
-	MOV.B A0,(YY)
+	;MOVI	A0,0
+	CMOV.B A0,(YY)
 	SLL.D	A0,3
 	ADD.D	A0,19
 	OUT	28754,A0  ; y
@@ -2702,8 +2702,8 @@ FL1:
 		CMP.D	A0,A3
 		JC	RET13
 		MOV.D	A4,A3
-		MOVI	A0,0
-		mov.b	a0,(a4)
+		;MOVI	A0,0
+		cmov.b a0,(a4)
 		swap	a0
 		ADDI	a4,1
 		mov.b	a0,(a4)
@@ -3036,8 +3036,8 @@ STOSW:
 	ADDI	a4,1
 	RET
 LODSW:
-	movi  a0,0
-	mov.b	a0,(a4)
+	;movi  a0,0
+	cmov.b	a0,(a4)
 	swap	a0
 	ADDI	a4,1
 	mov.b	a0,(a4)
@@ -3347,7 +3347,7 @@ BUFFER	DS	119
 BUFEND	DS	1
 BUFFER2	DS	120
 TXTUNF	DS	4
-STKLMT	DS	4096
+STKLMT	DS	8192
 STACK		DS	4
 TXTBGN	DS	60000   ; program space
 TXTEND	DS	4

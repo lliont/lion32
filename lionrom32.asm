@@ -131,6 +131,9 @@ SDOKO:	MOVI		A0,5        ; sd card ok
 		MOV		A4,A0
 		IJSR		FLOAD   ; Load boot file
 		STI
+		SETX		=32*MAXFILES/2-1
+		MOV.D		A0,FTAB ; clear file table
+		NTOM		A0,0
 		JMP		START  ; address at RAM
 SDNOT:
 		MOVI		A0,5
@@ -215,6 +218,7 @@ INT5T17	DA	CIRC     ; Circle A1,A2,A3
 INT5T18     DA	VSCROLL2 ; vertical scroll with data feed	                              
 INT5T19     DA	HSCROLL2 ; horizontal scroll with data
 INT5T20     DA    LASTKEY  ; empty buffer return lastkey in A1
+INT5T21     DA    MEMNCMP  ; compare A3=n bytes in *A1 and *A2, A0 0=equal -1=not
 
 ;Hardware interrupt
 ;HINT:		;ADD		(COUNTER),1
@@ -1265,7 +1269,7 @@ FLEXIT:	POPI	A5
 ;-------------------------------------------------
 
 DELAY: PUSHXI
-	SETX	50000
+	SETX	45000
 LDDL: JMPX	LDDL    ;delay
 	POPXI
 	IRET
@@ -1624,6 +1628,7 @@ SPI_INIT:
 	PUSHI 	A1
 	PUSHI	A2
 	PUSHI	A3
+	OUT	53,64
 	MOV   (SDHC),0
 	MOVI	A3,0
 
@@ -1867,6 +1872,7 @@ SPSNX:
 	
 
 SPIF: OUT	19,2
+	OUT	53,20
 	POPI	A3
 	POPI	A2
 	POPI	A1
@@ -1947,10 +1953,10 @@ P8C:		MOV.D		A4,A1       ; character table address
 		MULU		A1,6   ; 6/2
 		ADD.D		A0,A1
 		ADD.D		A0,VBASE1   ; video base
-		MOVI		A2,0
-		MOVI		A1,0
-		MOV.B		A2,(BCOL)
-		MOV.B		A1,(FCOL)
+		;MOVI		A2,0
+		;MOVI		A1,0
+		CMOV.B	A2,(BCOL)
+		CMOV.B	A1,(FCOL)
 		SETX		2 ; 3 font words
 P2C:		
 		MOVI		A6,0
@@ -2086,8 +2092,8 @@ PLOT:		IN	A0,24
 		PUSHI		A1
 		PUSHI		A2        ; PLOT at A1,A2 mode in (PLOTM)
 		PUSHI		A4
-		MOVI		A4,0
-		MOV.B		A4,(PLOTM)
+		;MOVI		A4,0
+		CMOV.B	A4,(PLOTM)
 		MOV.D		A0,A2
 		NOT.D		A0
 		AND.D		A0,7
@@ -2429,20 +2435,18 @@ FGETPOS:
 	RETI
 
 FSEEK: PUSHI A3
-	 MOVI	A0,1
+	 MOV.D A0,A2
 	 MOV.B A3,(A1)
 	 BTST A3,7
 	 JZ FSKEXT
-	 MOVI	A0,0
-	 MOV.B A3,1(A1)
-	 CMP.B A3,114    ; is it readonly
-	 JNZ  FSEK1      ; 
 	 MOV.D A3,18(A1) ; file size
 	 CMP.D A2,A3
 	 JB  FSEK1
-	 MOVI	A0,2
-	 SUBI	 A3,1
-	 MOV.D A2,A3
+	 MOV.D A0,-1
+       MOV.B A3,1(A1)
+	 CMP.B A3,114    ; is it readonly
+	 JZ  FSKEXT
+	 MOV.D A0,A2
 FSEK1: MOV.D 14(A1),A2
 FSKEXT: POPI A3	 
 	 RETI
@@ -2569,8 +2573,8 @@ FR1:  PUSHI	A0
 	MOV.D 14(A1),A4  ; update file pos idx
 	JMP	FRL4
 FR3:	MOV.D 14(A1),A4 ; set and exit
-	MOVI	A1,0
-	MOV.B A1,A0
+	;MOVI	A1,0
+	CMOV.B A1,A0
 	POPI	A0
 FREXIT:
 	POPI	A7
@@ -2947,14 +2951,51 @@ OAEX:		MOV.D  A0,A6
 		POPI	A4
 		JMP	OFEXIT
 
+MEMNCMP:    PUSHI A1
+		PUSHI	A2
+		PUSHI	A3
+		PUSHXI
+		MOVI  A0,0
+		SUBI  A3,1
+		SETX  A3
+MEMNC1:	CMP.B (A1),(A2)			
+            JNZ	MEMNC2
+		ADDI A1,1
+		ADDI A2,1
+		JMPX MEMNC1
+		JMP MEMNCE
+MEMNC2:     MOV.D A0,-1
+MEMNCE:	POPXI
+		POPI A3
+		POPI A2
+		POPI A1
+		RETI
+
 	; A4=&filename STATUS 128=OPENED 0=NOT OPEN 
-OPENFILE:	PUSHI	A2
+OPENFILE:	PUSHI A1
+		PUSHI	A2
+		PUSHI A3
 		PUSHI	A5
 		PUSHI	A6
 		PUSHI	A7
 		PUSHXI
 		MOV.D A6,FTAB
-		MOV	A0,MAXFILES
+		MOV.D A7,A1
+		MOV.D A1,A4
+		MOV.D A2,A6
+		ADD.D A2,22
+		SETX =MAXFILES-1
+		MOVI  A3,11
+OF3:		MOV.D A0,21      ; check for file already open
+		INT  5
+            CMPI A1,0
+            MOV.D A0,-1
+		JZ OFEXER
+		ADD.D A2,34
+		JMPX OF3
+		MOV.D A1,A7
+		
+		MOV.D	A0,MAXFILES
 OF1:		CMP.B	(A6),0
 		JZ	OF2
 		ADD.D	A6,34
@@ -2981,7 +3022,9 @@ OFEXER:	POPXI
 		POPI	A7
 		POPI	A6
 		POPI	A5
+		POPI  A3
 		POPI	A2
+		POPI  A1
 		RETI
 
 ; Set file length in directory
@@ -3011,15 +3054,26 @@ FSETLEN:
 	POPI	A1
 	IRET
 
+;FTAB:   ; FILE TABLES
+;FSTATUS     DS	1  ;0 Open or not 
+;FATYPE      DS   1  ;1 r w a 
+;FBUFPTR     DS	4  ;2 ptr to buffer
+;FCLSTPTR    DS   4  ;6 first file cluster 
+;FBUFCNUM    DS   4  ;10 no of file page in buffer 
+;FILEPOS	 DS	4  ;14 file position
+;FILESIZE    DS	4  ;18 file size
+;FFNAME      DS	12 ;22 NAME
+;RESTFT      DS   374
+
 ; A1=file handle
 CLOSEFILE:  
 		MOV.B A0,(A1)
-		BTST  A0,0
-		JZ  CLF1
-		IJSR FLUSH
+		CMP.B A0,0
+		JZ    CLF2
 CLF1:		MOV.B A0,1(A1)
 		CMP.B A0,114
-		JZ  CLF2
+		JZ    CLF2
+            IJSR FLUSH
 		IJSR FSETLEN
 CLF2:		MOVI A0,0
 		MOV (A1),A0
@@ -3029,7 +3083,10 @@ CLF2:		MOVI A0,0
 		MOV.D 14(A1),A0
 		MOV.D 18(A1),A0
 		MOV.D 22(A1),A0
+            MOV.D 26(A1),A0
+		MOV.D 30(A1),A0
 		RETI
+
 
 
 KEYBCD	DB    $29,$45,$16,$1E,$26,$25,$2E,$36,$3D,$3E,$46,$1C,$32,$21,$23,$24,$2B,$34,$33,$43,$3B,$42,$4B
@@ -3216,12 +3273,15 @@ FBUFCNUM    DS    4  ; no of cluster in buffer
 FILEPOS	DS	4  ; file position
 FILESIZE    DS	4  ; file size
 FFNAME      DS	12 ; NAME
-RESTFT      DS    374
+RESTFT      DS    =34*MAXFILES-34
 FTABEND:
 CTABLE3     DS    =128*8   ; for caracters >127
 CTAB3END:
 ORG $5000
 START:	
+
+
+
 
 
 

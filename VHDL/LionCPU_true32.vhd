@@ -138,25 +138,25 @@ constant param1_dw:std_logic_vector(0 to 127):=
 "00000111010010000001110000000101"&
 "10011101110011111101010111111110"&
 "11111110010100000000000100011100"&
-"00000001111001001111111111100111";
+"00000001111001001111101111100111";
 
 constant param3_dw:std_logic_vector(0 to 127):=
 "00000011111110000001110000000111"&
 "10011101110011111101010111111110"&
 "11101110001100001111100001010000"&
-"00000001000101001011111111100111";
+"00000001000101001011101111100111";
 
 constant param2_swap:std_logic_vector(0 to 127):=
 "01111000001001111110000000000000"&
 "01000000000000000010100000000000"&
 "00000000000011100000000000100011"&
-"00101100000000000000000000011000";
+"00101100000000000000010000011000";
 
 constant param4_relative:std_logic_vector(0 to 127):=
 "00000000000000000000000000000000"&
 "00000000010100000000000000000000"&
 "00000000000000000000000000000000"&
-"00000000000000001100111111111111";
+"00000000000000001100001111111111";
 
 constant param5_dfetch:std_logic_vector(0 to 127):=
 "00000000000000000000000000000000"&
@@ -294,7 +294,7 @@ IF rising_edge(clock) THEN
 				AS<='1';	FF<=ExecutionState;
 				restart:=true;
 			end case;
-		when RelativeState =>              -- relative
+		when RelativeState =>         -- relative
 			X1:=Ao;	Y1:=AoII;
 			RPC<=PC+X1;
 			if IND='1' then FF<=IndirectState; else FF<=ExecutionState; end if;
@@ -308,6 +308,15 @@ IF rising_edge(clock) THEN
 			when "0000001" =>              -- MOV MOV.B Reg,(Reg,NUM,[reg],[n]) 
 				if fetch then	tmp:=X; else tmp:=Y1; end if;
 				set_reg(r1,tmp,bwb,'0');
+				restart3:=true;
+			when "1110101" =>              -- CMOV CMOV.B Reg,(Reg,NUM,[reg],[n]) 
+				if bwb='0' then
+					if fetch then	tmp:=ZERO16&X(15 downto 0); else tmp:=ZERO16&Y1(15 downto 0); end if;
+				else
+					if fetch then tmp:=ZERO16&ZERO8&X(7 downto 0); else tmp:=ZERO16&ZERO8&Y1(7 downto 0); end if;
+				end if;
+				WAC:='0';
+				set_reg(r1,tmp,'0','0');
 				restart3:=true;
 			when "0101000" =>              -- MOV.D Reg,...
 				if fetch then	tmp:=X; else tmp:=Y1; end if;
@@ -558,6 +567,16 @@ IF rising_edge(clock) THEN
 					set_reg(r1,tmp);
 				end if;
 				restart3:=true;
+			when "1110100" =>  -- SRA.D SLA.D  R,R
+				if bwb='0' then
+					SR(CA)<=X1(16-to_integer(unsigned(Y1(4 downto 0))));
+					tmp:= std_logic_vector(shift_right(signed (X1),to_integer(unsigned(Y1(4 downto 0)))));
+				else
+					SR(CA)<=X1(16-to_integer(unsigned(Y1(4 downto 0))));
+					tmp:= std_logic_vector(shift_left(signed (X1),to_integer(unsigned(Y1(4 downto 0)))));
+				end if;
+				set_reg(r1,tmp,'0','0');
+				restart3:=true;
 			when "1010001" =>              -- BSET  R,R / SLL.D R,R
 				if bwb='0' then
 					tmp:=X1;	tmp(to_integer(unsigned(Y1(4 downto 0)))):='1';
@@ -682,7 +701,7 @@ IF rising_edge(clock) THEN
 					if fetch then PC<=X; else	PC<=Y1; end if;
 					restart2:=true;
 				end case;
-			when "0101110" =>              -- SEX SEX.B (Reg,NUM,[reg],[n])
+			when "0101110" =>              -- SEX SEX.B Reg
 				if bwb='0' then
 					tmp(31 downto 16):=(others => X1(15));
 					tmp(15 downto 0):=X1(15 downto 0);
@@ -690,7 +709,7 @@ IF rising_edge(clock) THEN
 					tmp(31 downto 8):=(others => X1(7));
 					tmp(7 downto 0):=X1(7 downto 0);
 				end if;
-				set_reg(r1,tmp);
+				set_reg(r1,tmp,'0','0');
 				restart3:=true;
 			when "0110000" =>              --CMPI.B Reg,0-15
 				half:='1';
@@ -1208,7 +1227,8 @@ IF rising_edge(clock) THEN
 				if bwb='0' then
 					case TT is
 					when 0 =>
-						X1:=X; 
+						X1(15 downto 0):=X(15 downto 0);
+					   X1(31 downto 16):=(others => X(15));	
 					when 1 =>
 						AD:=Z1; AS<='0';
 					when others =>
@@ -1220,7 +1240,8 @@ IF rising_edge(clock) THEN
 					case TT is
 					when 0 =>
 						tmp:=Y1; 
-						Y1:=X; 
+						Y1(15 downto 0):=X(15 downto 0);
+					   Y1(31 downto 16):=(others => X(15));
 					when others =>
 						AD:=Z1; Y1:=tmp; restart:=true; FF<=StoreState; 
 					end case;
@@ -1283,7 +1304,6 @@ IF rising_edge(clock) THEN
 			when "1110011" =>              -- ADD.D SUB.D [n],reg 
 				X1:=X; sub:=bwb; AD:=X2;
 				IR(15 downto 9):="1110010"; -- continue ADD.D [n],n	
-				
 			when "1110000" =>              -- JR (Reg,NUM,[reg],[n])  JRXAD
 				if bwb='0' then
 					PC<=RPC; 
@@ -1304,18 +1324,16 @@ IF rising_edge(clock) THEN
 					set_reg(r1,tmp,'0','0'); 
 				end if;
 				restart2:=true;			
-				
-			--when "1110100" =>   
-			--when "1110101" =>     
+			
 			--when "1110111" =>             
 			--when "1111000" =>    
 			--when "1111001" =>        
 
-			when "1111010" =>              -- JRA (Reg,NUM,[reg],[n])
+			when "1111010" =>   -- JRA (Reg,NUM,[reg],[n])
 				If SR(ZR)='0' and SR(CA)='0' then PC<=RPC; restart2:=true; else restart3:=true; end if;
 			when "1111110" =>   -- RELATIVE JUMPS
 				case r2 is
-				when "000"  =>  -- JRGE - JRL (Reg,NUM,[reg],[n])
+				when "000"  =>   -- JRGE - JRL (Reg,NUM,[reg],[n])
 					if bwb='0' then
 						If SR(ZR)='1' or (SR(NG)=SR(OV)) then	PC<=RPC; restart2:=true; else restart3:=true; end if;
 					else

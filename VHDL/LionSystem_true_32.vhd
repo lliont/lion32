@@ -188,7 +188,8 @@ COMPONENT SPI is
 		clk, reset, w: IN std_logic ;
 		ready : OUT std_logic;
 		data_in  : IN std_logic_vector (7 downto 0);
-		data_out :OUT std_logic_vector (7 downto 0)
+		data_out :OUT std_logic_vector (7 downto 0);
+		divider: IN natural range 0 to 255:=16
 	);
 end COMPONENT;
 
@@ -235,15 +236,15 @@ COMPONENT XY_Display_MCP4822 is
 	(
 		sclk: IN std_logic;
 		reset: IN std_logic;
-		addr: OUT natural range 0 to 4095;
+		addr: OUT natural range 0 to 8191;
 		Q: IN std_logic_vector(15 downto 0);
 		CS,CS2,CS3,SCK,SDI,SDI2,SDI3: OUT std_logic;
 		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535;
-		max_addr:natural range 0 to 4095:=4095;
-		start_addr:natural range 0 to 4095:=0
+		max_addr:natural range 0 to 8191:=8191;
+		start_addr:natural range 0 to 8191:=0
 	);
 end COMPONENT;
 
@@ -272,17 +273,18 @@ Signal w1,spw1, spw2, spw3, spw4, xyw,xyen: std_logic:='0';
 Signal SPQ1,spvq1,SPQ2,spvq2,SPQ3,spvq3,SPQ4,spvq4,xyq1,xyq2: std_logic_vector(15 downto 0);
 Signal Ii : std_logic_vector(1 downto 0);
 Signal ad1,vad0,vad1:  natural range 0 to 32767;
-Signal serspeed1,serspeed2:  natural range 0 to 32767:=1301;
+Signal serspeed1,serspeed2:  natural range 0 to 32767:=434; --1301 = 38400;
 Signal spad1,spad3,spad5,spad7:  natural range 0 to 2047;
-Signal xyadr :  natural range 0 to 4095;
-Signal xyendaddr :  natural range 0 to 4095:=4095;
-Signal xystartaddr:  natural range 0 to 4095:=0;
+Signal xyadr :  natural range 0 to 8191;
+Signal xyendaddr :  natural range 0 to 8191:=8191;
+Signal xystartaddr:  natural range 0 to 8191:=0;
 Signal pperiod: natural range 0 to 65535:=3600;
 Signal sr,sw,ser2,sw2,sdready,sready,kr,kready,sdready2,sready2, noise: std_Logic;
 Signal sdi,sdo,sdi2,sdo2,kdo : std_logic_vector (7 downto 0);
 Signal Vol1,Vol2,Vol3 : std_logic_vector (7 downto 0):="11111111";
 SIGNAL Spi_in,Spi_out,rtc_data_in,rtc_data_out: STD_LOGIC_VECTOR (7 downto 0);
 Signal Spi_w, spi_rdy, play,play2,play3: std_logic;
+Signal spispeed: natural range 0 to 255 :=10;
 Signal XYmode,PCM, stereo, BACS, HINT_EN,BRI,PLLrst:std_Logic:='0';
 Signal BSEL,BSEL_LOW,BSEL_HI,BSEL0,BSEL1: std_logic_vector (1 downto 0);
 Signal spb, sdb: std_logic_vector (7 downto 0):="00000000";
@@ -317,8 +319,8 @@ SPRAM4: dual_port_ram_dual_clock
 	GENERIC MAP (DATA_WIDTH  => 16,	ADDR_WIDTH => 11)
 	PORT MAP ( clock0,clock1, spad7, to_integer(unsigned(AD(11 downto 1))), Do, spw4, spvq4, SPQ4, BSEL );
 XYRAM: dual_port_ram_dual_clock
-	GENERIC MAP (DATA_WIDTH  => 16,	ADDR_WIDTH => 12)
-	PORT MAP ( clockxy2,clock1, xyadr, to_integer(unsigned(AD(12 downto 1))), Do, xyw, xyq1, xyq2, BSEL );
+	GENERIC MAP (DATA_WIDTH  => 16,	ADDR_WIDTH => 13)
+	PORT MAP ( clockxy2,clock1, xyadr, to_integer(unsigned(AD(13 downto 1))), Do, xyw, xyq1, xyq2, BSEL );
 XYC:XY_Display_MCP4822
 	PORT MAP (clockxy,rst,xyadr,xyq1,SPICS2,SPICS3,SPICS4,SCLK2,MOSI2,MOSI3,MOSI4,LDAC,xyplay,XYmode,PCM,stereo,pperiod,xyendaddr,xystartaddr);
 VIDEO0: videoRGB80
@@ -348,7 +350,7 @@ SoundC2: SoundI
 SoundC3: SoundI
 	PORT MAP (AUDIOC,rst,clock1,Waud3,aq3,Vol3,harm3,count3,play3); 
 MSPI: SPI 
-	PORT MAP ( SCLK,MOSI,MISO,clock1,rst,spi_w,spi_rdy,spi_in,spi_out);
+	PORT MAP ( SCLK,MOSI,MISO,clock1,rst,spi_w,spi_rdy,spi_in,spi_out,spispeed);
 RTC: RTC_SPI 
 	PORT MAP ( RTC_CLK,RTC_DATA,ncnt(10),rst,RtcGo,RtcRW,rtcReady,rtc_data_in,rtc_data_out);
 NOIZ:lfsr_II
@@ -368,7 +370,7 @@ ASo<=AS when HOLDA='0' else 'Z';
 DSo<=DS when HOLDA='0'  else 'Z'; 
 IOo<=IO when HOLDA='0' else 'Z'; 
 RWo<=RW when HOLDA='0' else 'Z';
-RWo2<='0' when RW='0'  else '1'; --and HOLDA='0' and ramwait2='1' --and (wstate/=0 or wacs='1' or bacs='1')
+RWo2<=RW;
 
 VW<= (DS='0' and AS='0' and RW='0');
 VR<= (AS='0' and RW='1');
@@ -404,7 +406,7 @@ AD_HI<=AD2 when (WACS='0' AND BACS='0' and IO='0') else AD;
 aligned<= AD(1)='0' or IO='1' or WACS='1' or BACS='1'; --(AD_HI(2)=AD(2));
 external<= IO='0' and (((AD(19)='0') and ((AD(18) or AD(17) or AD(16)) ='1')) or (AD(19)='1'));
 
-process (clock1) --external ram 32 bit accesss as 2 X 16 bit
+process (clock1) --external read ram 32 bit accesss as 2 X 16 bit
 begin
 if rising_edge(clock1) then
 	if external and VR then
@@ -431,7 +433,7 @@ if rising_edge(clock1) then
 end if;
 end process;
 
-process (clock1) --external ram 32 bit accesss  as 2 X 16 bit
+process (clock1) --external write ram 32 bit accesss  as 2 X 16 bit
 begin
 if rising_edge(clock1) then
 	if external and VW then
@@ -460,7 +462,7 @@ spw1<='1' when VW and IO='1' and  AD(19 downto 12)="00000100" else '0';
 spw2<='1' when VW and IO='1' and  AD(19 downto 12)="00000101" else '0';
 spw3<='1' when VW and IO='1' and  AD(19 downto 12)="00000110" else '0';
 spw4<='1' when VW and IO='1' and  AD(19 downto 12)="00000111" else '0';
-xyw<='1'  when VW and IO='1' and  AD(19 downto 13)="0001100"  else '0';
+xyw<='1'  when VW and IO='1' and  AD(19 downto 14)="000110"  else '0';
 			
 BSEL0 <= "11" when (WACS='0' and BACS='0') or
 		             (WACS='1' and BACS='0' and AD(1)='0') else
@@ -547,6 +549,7 @@ rtc_data_in<=Do(7 downto 0) when AD=50 and IO='1' and VW and rising_edge(clock1)
 RTCGO<=Do(0) when AD=51 and IO='1' and VW and rising_edge(clock1);
 RTC_CE<=Do(1) when AD=51 and IO='1' and VW and rising_edge(clock1);
 RTCRW<=Do(2) when AD=51 and IO='1' and VW and rising_edge(clock1);
+spispeed<=to_integer(unsigned(Do(7 downto 0))) when  AD=53 and IO='1' and VW and rising_edge(clock1);  
 
  --Sound, XY IO decoding 
 aq<=Do(15 downto 0) when AD=8 and IO='1' and VW and rising_edge(clock1); -- port 8
@@ -563,8 +566,8 @@ Waud<='0' when AD=8  and IO='1' and VW and rising_edge(clock1) else '1' when ris
 Waud2<='0' when AD=10 and IO='1' and VW and rising_edge(clock1) else '1' when rising_edge(clock1);
 Waud3<='0' when AD=12 and IO='1' and VW and rising_edge(clock1) else '1' when rising_edge(clock1);
 HINT_EN<=Do(0) when AD=13 and IO='1' and VW and rising_edge(clock1); 
-xyendaddr<=to_integer(unsigned(Do(11 downto 0))) when AD=43 and IO='1' and VW and rising_edge(clock1);
-xystartaddr<=to_integer(unsigned(Do(11 downto 0))) when AD=44 and IO='1' and VW and rising_edge(clock1); 
+xyendaddr<=to_integer(unsigned(Do(12 downto 0))) when AD=43 and IO='1' and VW and rising_edge(clock1);
+xystartaddr<=to_integer(unsigned(Do(12 downto 0))) when AD=44 and IO='1' and VW and rising_edge(clock1); 
 XYmode<=Do(0) when AD=30 and IO='1' and VW and rising_edge(clock1);
 PCM   <=Do(1) when AD=30 and IO='1' and VW and rising_edge(clock1); 
 stereo<=Do(2) when AD=30 and IO='1' and VW and rising_edge(clock1); 
@@ -585,7 +588,7 @@ begin
 		if AD(19 downto 12)="00000111" then Di1:=SPQ4; end if;
 		if AD(19 downto 13)="0001100" then Di1:=xyq2; end if;
 		if AD=4 then Di1:="00000000"&sdo; end if; -- serial1
-		if AD=5 then Di1:="00000000"&sdo2; end if; -- serial1
+		if AD=5 then Di1:="00000000"&sdo2; end if; -- serial2
 		if AD=14 then Di1:="000000"&caps&shift&kdo; end if; --keyboard
 		if AD=6 then Di1:="00000000000" & sdready2 & sready2 & kready & sdready & sready; end if; -- serial status
 		if AD=16 then Di1:="00000000"&spi_out; end if; --spi 

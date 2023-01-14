@@ -13,15 +13,15 @@ entity XY_Display_MCP4822 is
 	(
 		sclk: IN std_logic;
 		reset: IN std_logic;
-		addr: OUT natural range 0 to 4095;
+		addr: OUT natural range 0 to 8191;
 		Q: IN std_logic_vector(15 downto 0);
 		CS,CS2,CS3,SCK,SDI,SDI2,SDI3: OUT std_logic;
 		LDAC,isplaying: OUT std_logic:='0';
 		MODE: IN std_logic:='0';
 		PCM,stereo: IN std_logic:='0';
 		pperiod: IN natural range 0 to 65535;
-		max_addr:natural range 0 to 4095:=4095;
-		start_addr:natural range 0 to 4095:=0
+		max_addr:natural range 0 to 8191:=8191;
+		start_addr:natural range 0 to 8191:=0
 	);
 end XY_Display_MCP4822;
 
@@ -29,13 +29,13 @@ end XY_Display_MCP4822;
 Architecture Behavior of XY_Display_MCP4822 is
 
 Signal spi_rdy,spi_w: std_logic:='0';
-Shared variable mcnt,cnt,maxd :  natural range 0 to 255;
+Shared variable mcnt,cnt,maxd :  natural range 0 to 511;
 Shared variable mcnt2:  natural range 0 to 65535;
 Signal x,y: std_logic_vector(9 downto 0);
 Signal z: std_logic_vector(7 downto 0);
 Signal spi_in,spi_in2,spi_in3: std_logic_vector(15 downto 0);
-Shared variable caddr: natural range 0 to 4095:=0;
-Shared variable maxad: natural range 0 to 4095:=4095;
+Shared variable caddr: natural range 0 to 8191:=0;
+Shared variable maxad: natural range 0 to 8191:=8191;
 Shared variable e,sx,sy:integer range -2048 to 2047;
 Shared variable lx,ly,cx,cy,dx,dy,dx2,dy2:integer range -2048 to 2047;
 Shared variable restart: natural range 0 to 3;
@@ -79,7 +79,7 @@ begin
 					z<=Q(7 downto 0);
 					y(1)<=Q(8); x(1)<=Q(12);
 				when 2 =>
-					if caddr<4095 then caddr:=caddr+1; else caddr:=0;  end if;
+					if caddr<8191 then caddr:=caddr+1; else caddr:=0;  end if;
 					swait:='0';	onetime:='0';
 				when 3 =>
 					y(9 downto 2)<=Q(7 downto 0); 

@@ -454,6 +454,7 @@ constant p2:natural:=p1+pno*2;
 constant l2:natural:=l1+lno*2;
 
 type sprite_dim is array (0 to spno*4+3) of natural range 0 to 511;
+type sprite_dim2 is array (0 to spno*4+3) of std_logic_vector(7 downto 0);
 type sprite_line_data is array (spno downto 0) of std_logic_vector(3 downto 0);
 type sprite_transp_data is array (spno downto 0) of std_logic_vector(15 downto 0);
 type dist is array (0 to spno) of natural range 0 to 2047;
@@ -464,6 +465,7 @@ shared variable lines: natural range 0 to 1023;
 shared variable det: std_logic:='0';
 Signal vidc: boolean:=false;
 Signal SX,SY: sprite_dim;
+Signal SA: sprite_dim2;
 Signal SEN:sprite_enable;
 Signal pixel : natural range 0 to 1023;
 
@@ -515,6 +517,7 @@ begin
 			if (lines=DATA_LINE) and (pixel<spno*4+4)  then	
 				if pm4 = 0 then SX(pd4)<=to_integer(unsigned(SPQ(8 downto 0))); end if; 
 				if pm4 = 1 then SY(pd4)<=to_integer(unsigned(SPQ(8 downto 0))); end if;
+				if pm4 = 2 then SA(pd4)<=SPQ(7 downto 0); end if;
 				if pm4 = 3 then SEN(pd4)<=SPQ(0); end if;
 			end if;
 			if (lines>=l1 and lines<l2 and (pixel<(spno*4+4))) then

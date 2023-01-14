@@ -14,13 +14,14 @@ entity SPI is
 		clk, reset, w : IN std_logic ;
 		ready : OUT std_logic;
 		data_in : IN std_logic_vector (7 downto 0);
-		data_out :OUT std_logic_vector (7 downto 0)
+		data_out :OUT std_logic_vector (7 downto 0);
+		divider: IN natural range 0 to 255:=10
 	);
 end SPI;
 
 Architecture Behavior of SPI is
 
-constant divider:natural :=20; --36; --  74  124=200Khz
+--constant divider:natural :=10; --36; --  74  124=200Khz
 Signal inb,outb: std_logic_vector(7 downto 0);
 Signal rcounter :natural range 0 to 127;
 Signal state :natural range 0 to 7:=7;
