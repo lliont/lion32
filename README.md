@@ -15,7 +15,7 @@ Lion1.sch and Lion1.brd are eagle files for the Lion base board.
 
 Lionc directory contains small-c for Lion files, cc.exe the compiler, Lionlink.exe - llink.exe the linker, clib.bin is the library
 
-Hardware design and software released under the Creative Commons License BY-NC-SA
+Hardware design and software released under the Creative Commons License BY-NC-SA https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Theodoulos Liontakis.
 
